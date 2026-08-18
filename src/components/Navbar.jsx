@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import React, { useEffect, useRef, useState } from "react";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useCart } from "../context/CartContext.jsx";
 import { useNotifications } from "../context/NotificationContext.jsx";
@@ -9,6 +9,7 @@ import { getOptimizedImageUrl } from "../utils/media.js";
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { isAuthenticated, user, logout } = useAuth();
   const { cart } = useCart();
   const { unreadCount } = useNotifications();
@@ -18,6 +19,36 @@ const Navbar = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [isSuggesting, setIsSuggesting] = useState(false);
+  const accountMenuRef = useRef(null);
+
+  useEffect(() => {
+    setIsOpen(false);
+    setIsAccountOpen(false);
+    setSuggestions([]);
+  }, [location.pathname, location.search]);
+
+  useEffect(() => {
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+        setIsAccountOpen(false);
+        setSuggestions([]);
+      }
+    };
+
+    const closeAccountMenu = (event) => {
+      if (accountMenuRef.current && !accountMenuRef.current.contains(event.target)) {
+        setIsAccountOpen(false);
+      }
+    };
+
+    document.addEventListener("keydown", closeOnEscape);
+    document.addEventListener("mousedown", closeAccountMenu);
+    return () => {
+      document.removeEventListener("keydown", closeOnEscape);
+      document.removeEventListener("mousedown", closeAccountMenu);
+    };
+  }, []);
 
   React.useEffect(() => {
     if (searchTerm.trim().length < 2) {
@@ -99,9 +130,11 @@ const Navbar = () => {
           type="button"
           aria-expanded={isOpen}
           aria-controls="customer-navigation"
+          aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"}
           onClick={() => setIsOpen((current) => !current)}
         >
-          Menu
+          <span className="menu-icon" aria-hidden="true"><i /><i /><i /></span>
+          <span>{isOpen ? "Close" : "Menu"}</span>
         </button>
       </div>
 
@@ -115,11 +148,18 @@ const Navbar = () => {
         <NavLink to="/lookbook" onClick={closeMenus}>Lookbook</NavLink>
         <NavLink to="/faq" onClick={closeMenus}>FAQ</NavLink>
         {isAuthenticated ? (
-          <div className="account-menu">
-            <button className="nav-button" type="button" onClick={() => setIsAccountOpen((current) => !current)}>
+          <div className="account-menu" ref={accountMenuRef}>
+            <button
+              className="nav-button account-menu-button"
+              type="button"
+              aria-expanded={isAccountOpen}
+              aria-controls="account-navigation"
+              onClick={() => setIsAccountOpen((current) => !current)}
+            >
               {user?.name || "Account"}
+              <span className="account-chevron" aria-hidden="true" />
             </button>
-            <div className={`account-dropdown ${isAccountOpen ? "open" : ""}`}>
+            <div id="account-navigation" className={`account-dropdown ${isAccountOpen ? "open" : ""}`} aria-label="Account navigation">
               <Link to="/account" onClick={closeMenus}>Dashboard</Link>
               <Link to="/orders" onClick={closeMenus}>My Orders</Link>
               <Link to="/wishlist" onClick={closeMenus}>Wishlist</Link>
