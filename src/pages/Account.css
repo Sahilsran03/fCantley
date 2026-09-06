@@ -1,0 +1,54 @@
+.cantley-account { width: min(100%, 1200px); margin: 0 auto; padding: 24px clamp(16px, 3vw, 32px) 64px; color: #171714; }
+.cantley-account *, .cantley-account *::before, .cantley-account *::after { box-sizing: border-box; }
+.cantley-account .page-heading, .cantley-account .auth-copy { margin: 0 0 28px; padding: 8px 0 28px; border-bottom: 1px solid #deded7; }
+.cantley-account .row-heading { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; }
+.cantley-account .eyebrow { margin: 0 0 10px; color: #6b6b67; font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; }
+.cantley-account h1 { margin: 0; font-size: clamp(2rem, 4vw, 3.75rem); font-weight: 500; line-height: 1.08; letter-spacing: -.045em; }
+.cantley-account .page-heading p:last-child, .cantley-account .auth-copy > p:not(.eyebrow) { margin: 16px 0 0; color: #6b6b67; font-size: .9rem; }
+.cantley-account h2 { margin: 0 0 22px; font-size: 1.05rem; font-weight: 500; letter-spacing: -.02em; }
+.account-overview { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 24px; }
+.account-panel { min-width: 0; padding: 24px; border: 1px solid #deded7; background: #fff; }
+.account-details { display: grid; gap: 18px; margin: 0; }
+.account-details > div { display: grid; grid-template-columns: 80px minmax(0, 1fr); gap: 16px; font-size: .88rem; }
+.account-details dt, .account-muted { color: #6b6b67; }
+.account-details dd { margin: 0; }
+.account-wallet { background: #f6f5f0; display: flex; flex-direction: column; justify-content: center; }
+.account-wallet h2 { color: #6b6b67; font-size: .85rem; letter-spacing: 0; }
+.account-wallet strong { font-size: clamp(1.8rem, 3vw, 2.6rem); font-weight: 500; letter-spacing: -.04em; }
+.account-membership { display: flex; flex-wrap: wrap; gap: 20px 40px; padding: 24px 0; }
+.account-membership p { display: flex; flex-wrap: wrap; gap: 10px; margin: 0; font-size: .8rem; }
+.account-membership span { color: #6b6b67; }
+.account-membership strong { font-weight: 500; }
+.account-recent-order { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px 20px; padding: 16px 0; border-top: 1px solid #eaeae4; font-size: .8rem; }
+.account-recent-order strong { font-weight: 500; }
+.account-navigation a { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 48px; padding: 12px 0; border-top: 1px solid #eaeae4; font-size: .85rem; }
+.cantley-account .form-panel { display: grid; gap: 22px; width: 100%; max-width: none; min-width: 0; margin: 0 0 28px; padding: 28px; border: 1px solid #deded7; border-radius: 0; background: #fff; box-shadow: none; }
+.cantley-account .form-panel h2 { margin: 0; }
+.cantley-account .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+.cantley-account label { display: grid; gap: 8px; min-width: 0; color: #5c5c56; font-size: .8rem; }
+.cantley-account input, .cantley-account select { width: 100%; min-width: 0; min-height: 46px; padding: 12px; border: 1px solid #d8d8d0; border-radius: 0; background: #fff; color: #171714; font: inherit; font-size: 1rem; }
+.cantley-account input[readonly] { background: #f6f5f0; color: #6b6b67; }
+.cantley-account .inline-check { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.cantley-account input[type="checkbox"] { width: 18px; min-height: 18px; height: 18px; accent-color: #171714; }
+.cantley-account .primary-button, .cantley-account .secondary-button, .cantley-account .button-link { display: inline-flex; align-items: center; justify-content: center; width: fit-content; max-width: 100%; min-height: 44px; padding: 12px 20px; border: 1px solid #171714; border-radius: 0; background: #171714; color: #fff; font: inherit; font-size: .8rem; white-space: normal; text-align: center; cursor: pointer; }
+.cantley-account .secondary-button { color: #171714; background: transparent; }
+.cantley-account button:hover:not(:disabled), .cantley-account .button-link:hover, .cantley-account a.secondary-button:hover { color: #fff; background: #393932; }
+.cantley-account button:disabled { opacity: .6; cursor: wait; }
+.cantley-account :is(a, button, input, select):focus-visible { outline: 2px solid #706346; outline-offset: 4px; }
+.cantley-account .form-actions, .cantley-account .address-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.cantley-account .address-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.cantley-account .address-card { display: flex; flex-direction: column; min-width: 0; padding: 24px; border: 1px solid #deded7; border-radius: 0; background: #fff; box-shadow: none; }
+.cantley-account .address-card > div:first-child { display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
+.cantley-account .address-card h2 { margin: 0; }
+.cantley-account .address-card p { margin: 4px 0; font-size: .88rem; color: #5c5c56; line-height: 1.65; }
+.cantley-account .address-actions { margin-top: auto; padding-top: 20px; }
+.cantley-account .discount-badge { padding: 4px 8px; border: 0; border-radius: 0; background: #eeeee7; color: #5c5c56; font-size: .72rem; }
+.cantley-account .empty-state, .account-state { grid-column: 1 / -1; padding: 48px 20px; background: #f6f5f0; border: 1px solid #deded7; border-radius: 0; text-align: center; }
+.cantley-account .form-alert, .cantley-account .form-success { margin: 0; padding: 16px; border-radius: 0; font-size: .88rem; }
+.cantley-account .account-links { display: flex; flex-wrap: wrap; gap: 12px 28px; }
+.cantley-account .account-links a { display: inline-flex; align-items: center; min-height: 44px; font-size: .85rem; text-decoration: underline; text-underline-offset: 4px; }
+.account-profile .account-wallet { margin-top: 24px; max-width: 420px; }
+.cantley-account :is(h1, h2, p, a, strong, dt, dd, label, button, .form-alert, .form-success) { overflow-wrap: anywhere; }
+.cantley-account .row-heading > div { min-width: 0; }
+@media (max-width: 800px) { .account-overview { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 600px) { .cantley-account .form-grid, .cantley-account .address-grid { grid-template-columns: minmax(0, 1fr); } .cantley-account .form-panel, .cantley-account .address-card, .account-panel { padding: 20px; } .cantley-account { padding-top: 16px; } .cantley-account .row-heading { align-items: start; } }

@@ -27,14 +27,15 @@ const SalesAnalytics = () => {
       {!data ? <div className="analytics-skeleton">Loading sales...</div> : (
         <div className="dashboard-grid">
           <section className="chart-panel wide-chart">
-            <h2>Daily Sales</h2>
+            <h2>Daily Order Value</h2>
             <ResponsiveContainer height={300} width="100%">
-              <LineChart data={data.daily}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="label" /><YAxis /><Tooltip /><Line dataKey="revenue" stroke="#357266" strokeWidth={3} /></LineChart>
+              <LineChart data={data.daily}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="label" /><YAxis /><Tooltip /><Line dataKey="orderValue" stroke="#357266" strokeWidth={3} /></LineChart>
             </ResponsiveContainer>
           </section>
           <section className="chart-panel"><h2>Weekly Orders</h2><ResponsiveContainer height={260} width="100%"><BarChart data={data.weekly}><XAxis dataKey="label" /><YAxis /><Tooltip /><Bar dataKey="orders" fill="#0f172a" /></BarChart></ResponsiveContainer></section>
-          <section className="chart-panel"><h2>Category Sales</h2><ResponsiveContainer height={260} width="100%"><BarChart data={data.categorySales}><XAxis dataKey="category" /><YAxis /><Tooltip /><Bar dataKey="revenue" fill="#be7c4d" /></BarChart></ResponsiveContainer></section>
-          <section className="chart-panel"><h2>Monthly Sales</h2><ResponsiveContainer height={260} width="100%"><LineChart data={data.monthly}><XAxis dataKey="label" /><YAxis /><Tooltip /><Line dataKey="revenue" stroke="#6366f1" strokeWidth={3} /></LineChart></ResponsiveContainer></section>
+          <section className="chart-panel"><h2>Category Order Value</h2><ResponsiveContainer height={260} width="100%"><BarChart data={data.categorySales}><XAxis dataKey="category" /><YAxis /><Tooltip /><Bar dataKey="orderValue" fill="#be7c4d" /></BarChart></ResponsiveContainer></section>
+          <section className="chart-panel"><h2>Monthly Order Value</h2><ResponsiveContainer height={260} width="100%"><LineChart data={data.monthly}><XAxis dataKey="label" /><YAxis /><Tooltip /><Line dataKey="orderValue" stroke="#6366f1" strokeWidth={3} /></LineChart></ResponsiveContainer></section>
+          <section className="chart-panel wide-chart"><h2>Money Received</h2><ResponsiveContainer height={300} width="100%"><BarChart data={data.receivedDaily}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="label" /><YAxis /><Tooltip /><Bar dataKey="onlineReceived" fill="#6366f1" /><Bar dataKey="codCollected" fill="#357266" /><Bar dataKey="totalReceived" fill="#be7c4d" /></BarChart></ResponsiveContainer></section>
         </div>
       )}
     </section>

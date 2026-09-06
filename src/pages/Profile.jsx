@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import "./Account.css";
 import { useAuth } from "../context/AuthContext.jsx";
 
 const Profile = () => {
@@ -40,18 +41,18 @@ const Profile = () => {
   };
 
   return (
-    <section className="profile-page">
+    <section className="cantley-account account-profile">
       <div className="auth-copy">
         <p className="eyebrow">Account</p>
-        <h1>Profile</h1>
+        <h1>Account</h1>
         <p>{user?.email}</p>
-        <p>Wallet balance: Rs. {Number(user?.walletBalance || 0).toLocaleString("en-IN")}</p>
-        <p>Loyalty rank: {user?.loyaltyRank || "Member"}</p>
+        <div className="account-panel account-wallet"><h2>Wallet Balance</h2><strong>{(typeof user?.walletBalance === "number" || (typeof user?.walletBalance === "string" && user.walletBalance.trim() !== "")) && Number.isFinite(Number(user.walletBalance)) ? `₹${Number(user.walletBalance).toLocaleString("en-IN")}` : "Unavailable"}</strong></div>
+        {user?.loyaltyRank ? <p>Loyalty rank: {user.loyaltyRank}</p> : null}
       </div>
 
       <form className="form-panel" onSubmit={handleSubmit}>
-        {message ? <div className="form-success">{message}</div> : null}
-        {error ? <div className="form-alert">{error}</div> : null}
+        {message ? <div className="form-success" role="status">{message}</div> : null}
+        {error ? <div className="form-alert" role="alert">{error}</div> : null}
 
         <label>
           Name
@@ -65,7 +66,7 @@ const Profile = () => {
 
         <label>
           Role
-          <input value={user?.role || "customer"} readOnly />
+          <input value={user?.role || ""} readOnly />
         </label>
 
         <button className="primary-button" type="submit" disabled={isSubmitting}>

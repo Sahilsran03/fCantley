@@ -49,6 +49,12 @@ export const AuthProvider = ({ children }) => {
     [persistSession]
   );
 
+  const googleLogin = useCallback(async (credential) => {
+    const response = await api.post("/auth/google", { credential }, { skipAuthRefresh: true });
+    persistSession(response.data);
+    return response.data;
+  }, [persistSession]);
+
   const verifyAdminTwoFactor = useCallback(
     async (payload) => {
       const response = await api.post("/auth/verify-admin-2fa", payload);
@@ -105,6 +111,7 @@ export const AuthProvider = ({ children }) => {
       verifyOtp,
       resendOtp,
       login,
+      googleLogin,
       verifyAdminTwoFactor,
       resendAdminTwoFactor,
       forgotPassword,
@@ -113,7 +120,7 @@ export const AuthProvider = ({ children }) => {
       refreshProfile,
       updateProfile
     }),
-    [forgotPassword, isReady, login, logout, refreshProfile, register, resendAdminTwoFactor, resendOtp, resetPassword, updateProfile, user, verifyAdminTwoFactor, verifyOtp]
+    [forgotPassword, googleLogin, isReady, login, logout, refreshProfile, register, resendAdminTwoFactor, resendOtp, resetPassword, updateProfile, user, verifyAdminTwoFactor, verifyOtp]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

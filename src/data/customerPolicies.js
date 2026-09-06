@@ -54,7 +54,7 @@ export const policyPages = {
       {
         heading: "Payments and COD",
         body: [
-          "COD may be available for eligible orders. Cantley may ask for ₹100 or 20% advance confirmation before processing an order, especially for custom or print-on-demand products.",
+          "COD may be available for eligible products and delivery locations. Some COD orders require a secure online advance; the exact server-confirmed amount is shown at checkout, and any remaining COD is payable on delivery.",
           "Refunds are handled manually for now and may require support confirmation."
         ]
       },
@@ -89,7 +89,7 @@ export const policyPages = {
         heading: "Refunds",
         body: [
           "Refunds are manual for now. After Cantley reviews and approves a refund, support will confirm the next steps and expected timeline.",
-          "Shipping charges, advance confirmation amounts, or partial amounts may be handled case by case depending on the issue."
+          "Shipping charges, verified online advance payments, or partial amounts may be handled case by case depending on the issue."
         ]
       }
     ]
@@ -121,7 +121,7 @@ export const policyPages = {
       {
         heading: "Processing and dispatch",
         body: [
-          "Processing time may depend on design approval, advance confirmation, printing, quality check, packing, and shipping partner pickup.",
+          "Processing time may depend on design approval, required advance payment, printing, quality check, packing, and shipping partner pickup.",
           "Custom and bulk orders can take longer than ready catalog items."
         ]
       },
@@ -142,7 +142,7 @@ export const policyPages = {
   },
   COD_POLICY: {
     title: "COD / Advance Payment Policy",
-    description: "How COD and advance confirmation work for Cantley custom printing orders.",
+    description: "How COD eligibility and secure online advance payments work for Cantley orders.",
     sections: [
       {
         heading: "COD availability",
@@ -151,12 +151,12 @@ export const policyPages = {
         ]
       },
       {
-        heading: "Advance confirmation",
+        heading: "Secure online advance",
         body: [
-          "For COD or custom print-on-demand orders, Cantley may request ₹100 or 20% advance confirmation before processing.",
-          "This helps confirm serious orders before design review, printing, and production work begins."
+          "Some COD-eligible products may require a secure online advance through Razorpay. The exact amount is configured per product and confirmed by the server at checkout.",
+          "After successful advance payment, any remaining COD is payable on delivery."
         ],
-        callout: "The final balance can usually be paid as COD if COD is available for the order."
+        callout: "Checkout shows the server-confirmed advance and the amount that will remain payable on delivery."
       },
       {
         heading: "Manual payment support",
@@ -214,7 +214,7 @@ export const policyPages = {
       {
         heading: "Design approval",
         body: [
-          "If Cantley needs clarification, support may contact you before printing. Processing time may start after design approval and advance confirmation are complete."
+          "If Cantley needs clarification, support may contact you before printing. Processing time may start after design approval and any required secure advance payment are complete."
         ]
       }
     ]
@@ -228,7 +228,7 @@ export const faqItems = [
   },
   {
     question: "Is COD available?",
-    answer: "COD may be available for eligible orders and locations. Cantley may ask for ₹100 or 20% advance confirmation before processing."
+    answer: "COD may be available for eligible products and locations. Some orders require a server-confirmed secure Razorpay advance, with any remaining COD payable on delivery."
   },
   {
     question: "Can I return a custom printed product?",
@@ -244,7 +244,7 @@ export const faqItems = [
   },
   {
     question: "How long does processing take?",
-    answer: "Processing time can depend on design approval, advance confirmation, printing, quality check, packing, and shipping."
+    answer: "Processing time can depend on design approval, any required advance payment, printing, quality check, packing, and shipping."
   },
   {
     question: "Do you ship internationally?",

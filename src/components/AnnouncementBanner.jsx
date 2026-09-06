@@ -21,13 +21,22 @@ const AnnouncementBanner = () => {
     localStorage.setItem("dismissedAnnouncements", JSON.stringify([...next]));
   };
 
+  const label = announcement.buttonText || "Learn more";
+  const link = /^\/(?!\/)/.test(announcement.buttonLink || "")
+    ? <Link to={announcement.buttonLink}>{label}</Link>
+    : /^(https?:\/\/|mailto:|tel:)/i.test(announcement.buttonLink || "")
+      ? <a href={announcement.buttonLink}>{label}</a>
+      : null;
+
   return (
-    <div className="announcement-banner">
-      {getMediaUrl(announcement.image) ? <img src={getMediaUrl(announcement.image)} alt="" /> : null}
-      <div><strong>{announcement.title}</strong><p>{announcement.message}</p></div>
-      {announcement.buttonLink ? <Link to={announcement.buttonLink}>{announcement.buttonText || "Open"}</Link> : null}
-      <button type="button" onClick={dismiss}>Dismiss</button>
-    </div>
+    <aside className="announcement-banner" aria-label="Store announcement">
+      <div className="announcement-inner">
+        {getMediaUrl(announcement.image) ? <img src={getMediaUrl(announcement.image)} alt="" /> : null}
+        <div className="announcement-copy"><strong>{announcement.title}</strong><span>{announcement.message}</span></div>
+        {link}
+        <button type="button" className="announcement-dismiss" onClick={dismiss} aria-label="Dismiss announcement">Dismiss</button>
+      </div>
+    </aside>
   );
 };
 

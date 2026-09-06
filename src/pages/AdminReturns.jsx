@@ -31,7 +31,7 @@ const AdminReturns = () => {
       <div className="filter-bar">
         <select value={filters.status} onChange={(event) => setFilters((current) => ({ ...current, status: event.target.value }))}>
           <option value="">All statuses</option>
-          {["Pending", "Approved", "Rejected", "Completed"].map((status) => <option key={status} value={status}>{status}</option>)}
+          {["Pending", "Approved", "Received", "Rejected", "Completed"].map((status) => <option key={status} value={status}>{status}</option>)}
         </select>
         <select value={filters.type} onChange={(event) => setFilters((current) => ({ ...current, type: event.target.value }))}>
           <option value="">All types</option>
@@ -55,6 +55,7 @@ const AdminReturns = () => {
               </div>
               <span className={`status-badge status-${request.status.toLowerCase()}`}>{request.status}</span>
               <span>{request.refundStatus}</span>
+              <span>{request.status === "Pending" ? "Pending approval" : request.status === "Approved" ? "Awaiting return" : request.status === "Received" && request.refundStatus === "Pending" ? "Refund pending" : request.status}</span>
               <Link to={`/admin/returns/${request._id}`}>Manage</Link>
             </div>
           ))}

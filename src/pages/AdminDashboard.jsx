@@ -6,7 +6,15 @@ import api from "../services/api.js";
 import { exportCsv } from "../utils/csv.js";
 
 const metricLabels = {
-  totalRevenue: "Revenue",
+  grossOrderValue: "Gross Order Value",
+  grossMoneyReceived: "Gross Money Received",
+  onlineReceived: "Online Received",
+  codCollected: "COD Collected",
+  codOutstanding: "Current COD Outstanding",
+  cancelledOrderValue: "Cancelled Order Value",
+  paidOrders: "Fully Paid Orders",
+  unpaidOrPartiallyPaidOrders: "Unpaid / Partially Paid",
+  incompleteFinancialOrders: "Incomplete Financial Data",
   totalOrders: "Orders",
   totalCustomers: "Customers",
   totalProducts: "Products",
@@ -46,7 +54,7 @@ const AdminDashboard = () => {
         <div>
           <p className="eyebrow">Admin</p>
           <h1>Cantley Dashboard</h1>
-          <p>Revenue, orders, customers, products, and reward activity at a glance.</p>
+          <p>Order value, collected money, outstanding COD, and operations at a glance.</p>
         </div>
         <AnalyticsFilter
           range={range}
@@ -62,12 +70,12 @@ const AdminDashboard = () => {
             {Object.entries(metricLabels).map(([key, label]) => (
               <article className="metric-card" key={key}>
                 <span>{label}</span>
-                <strong>{key === "totalRevenue" || key === "totalRewardsGiven" ? `Rs. ${Number(metrics[key] || 0).toLocaleString("en-IN")}` : Number(metrics[key] || 0).toLocaleString("en-IN")}</strong>
+                <strong>{["grossOrderValue", "grossMoneyReceived", "onlineReceived", "codCollected", "codOutstanding", "cancelledOrderValue", "totalRewardsGiven"].includes(key) ? `Rs. ${Number(metrics[key] || 0).toLocaleString("en-IN")}` : Number(metrics[key] || 0).toLocaleString("en-IN")}</strong>
               </article>
             ))}
           </div>
           <div className="chart-panel">
-            <h2>Sales Trend</h2>
+            <h2>Order Value Trend</h2>
             {sales.length ? (
               <ResponsiveContainer height={280} width="100%">
                 <BarChart data={sales}>
@@ -75,7 +83,7 @@ const AdminDashboard = () => {
                   <XAxis dataKey="label" />
                   <YAxis />
                   <Tooltip />
-                  <Bar dataKey="revenue" fill="#357266" />
+                  <Bar dataKey="orderValue" fill="#357266" />
                 </BarChart>
               </ResponsiveContainer>
             ) : <p>No sales data for this range.</p>}

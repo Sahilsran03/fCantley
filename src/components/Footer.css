@@ -1,0 +1,47 @@
+.cantley-footer {
+  border-top: 1px solid #deddd7;
+  background: #f3f2ed;
+  color: #34342f;
+  overflow-wrap: anywhere;
+}
+.cantley-footer-inner {
+  width: min(1280px, 100%);
+  margin: 0 auto;
+  padding: 56px clamp(20px, 4vw, 64px) 0;
+}
+.cantley-footer-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, .8fr) minmax(0, 1fr) minmax(0, 1.25fr);
+  gap: clamp(24px, 4vw, 56px);
+  padding-bottom: 40px;
+}
+.cantley-footer-main > * { min-width: 0; }
+.cantley-footer-logo { display: inline-flex; align-items: center; min-height: 48px; max-width: 100%; }
+.cantley-footer-logo img { display: block; width: 120px; max-width: 100%; height: 48px; object-fit: contain; }
+.cantley-footer-brand p { max-width: 290px; margin: 18px 0 14px; color: #66655d; font-size: .85rem; line-height: 1.85; }
+.cantley-footer a { color: inherit; text-decoration: none; text-underline-offset: 4px; text-decoration-thickness: 1px; }
+.cantley-footer a:hover { color: #706346; text-decoration: underline; }
+.cantley-footer a:focus-visible { outline: 2px solid #706346; outline-offset: 3px; border-radius: 1px; }
+.cantley-footer-contact { display: inline-flex; align-items: center; min-height: 44px; max-width: 100%; font-size: .8rem; }
+.cantley-footer-group h2 { margin: 14px 0 16px; color: #292923; font-size: .7rem; font-weight: 600; line-height: 1.5; letter-spacing: .12em; text-transform: uppercase; }
+.cantley-footer-group ul { margin: 0; padding: 0; list-style: none; }
+.cantley-footer-group li { margin: 0; padding: 0; }
+.cantley-footer-group a { display: flex; align-items: center; min-height: 44px; padding: 8px 0; font-size: .81rem; line-height: 1.6; }
+.cantley-footer-bottom { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 24px; padding: 16px 0; border-top: 1px solid #dcdad2; }
+.cantley-footer-bottom p { margin: 0; color: #66655d; font-size: .75rem; }
+.cantley-footer-bottom nav { display: flex; flex-wrap: wrap; gap: 8px 24px; }
+.cantley-footer-bottom a { display: inline-flex; align-items: center; min-height: 44px; font-size: .75rem; }
+@media (max-width: 900px) {
+  .cantley-footer-main { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+  .cantley-footer-brand { grid-column: 1 / -1; }
+  .cantley-footer-brand p { max-width: 460px; }
+}
+@media (max-width: 540px) {
+  .cantley-footer-inner { padding-top: 36px; }
+  .cantley-footer-main { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 20px; padding-bottom: 28px; }
+  .cantley-footer-brand { padding-bottom: 20px; border-bottom: 1px solid #dcdad2; }
+  .cantley-footer-group:last-child { grid-column: 1 / -1; padding-top: 8px; border-top: 1px solid #dcdad2; }
+  .cantley-footer-group:last-child ul { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 20px; }
+  .cantley-footer-group h2 { margin-top: 0; margin-bottom: 12px; }
+  .cantley-footer-group:last-child h2 { margin-top: 12px; }
+}

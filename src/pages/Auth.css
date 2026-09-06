@@ -1,0 +1,111 @@
+.storefront-auth {
+  width: 100%;
+  max-width: 460px;
+  min-width: 0;
+  margin: 0 auto;
+  padding: 12px 0 28px;
+  color: #242420;
+}
+
+.storefront-auth-heading { margin-bottom: 32px; text-align: center; }
+.storefront-auth-heading h1 {
+  margin: 0;
+  color: #242420;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.8rem, 5vw, 2.2rem);
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: -.025em;
+}
+.storefront-auth-heading p { margin: 12px 0 0; color: #65655f; font-size: .9rem; }
+.storefront-auth-form { display: grid; gap: 20px; min-width: 0; }
+.storefront-auth-form > label {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  color: #34342f;
+  font-size: .85rem;
+  font-weight: 500;
+}
+.storefront-auth-form input {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: 50px;
+  padding: 0 14px;
+  border: 1px solid #d2d2cb;
+  border-radius: 2px;
+  background: #fff;
+  color: #242420;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 400;
+}
+.storefront-auth-form .password-field input { padding-right: 54px; }
+.storefront-auth-form .password-toggle { right: 3px; width: 44px; height: 44px; padding: 0; border: 0; background: transparent; color: #34342f; border-radius: 2px; cursor: pointer; }
+.storefront-auth-form .password-toggle:hover,
+.storefront-auth-form .password-toggle:focus-visible { background: transparent; color: #34342f; }
+.storefront-auth :is(input, button, a):focus-visible { outline: 2px solid #706346; outline-offset: 3px; }
+.storefront-auth-form input:focus { border-color: #706346; }
+.storefront-auth-forgot { margin: -8px 0 0; text-align: right; font-size: .8rem; }
+.storefront-auth a { color: #34342f; text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; }
+.storefront-auth a:hover { color: #706346; }
+.storefront-auth-submit {
+  width: 100%;
+  min-height: 50px;
+  padding: 12px 16px;
+  border: 1px solid #242420;
+  border-radius: 2px;
+  background: #242420;
+  color: #fff;
+  font: inherit;
+  font-size: .85rem;
+  font-weight: 500;
+  letter-spacing: .04em;
+  cursor: pointer;
+}
+.storefront-auth-submit:hover:not(:disabled) { background: #3d3d35; }
+.storefront-auth-submit:disabled { opacity: .6; cursor: not-allowed; }
+.storefront-auth-note { margin: -4px 0 0; color: #65655f; font-size: .8rem; line-height: 1.6; }
+.storefront-auth-error { padding: 12px 14px; border-left: 2px solid #9b332b; background: #fff4f1; color: #8b3029; font-size: .85rem; overflow-wrap: anywhere; }
+.storefront-auth .google-auth-divider { margin: 4px 0 24px; gap: 16px; color: #74746c; font-size: .65rem; letter-spacing: .12em; }
+.storefront-auth .google-auth-divider::before,
+.storefront-auth .google-auth-divider::after { border-color: #deded7; }
+.storefront-auth .google-auth-button-host { display: flex; justify-content: center; }
+.storefront-auth-footer { margin: 8px 0 0; text-align: center; color: #65655f; font-size: .85rem; line-height: 1.8; }
+.storefront-auth-footer a { display: inline-block; margin-left: 5px; }
+
+@media (max-width: 540px) {
+  .storefront-auth { padding: 4px 4px 16px; }
+  .storefront-auth-heading { margin-bottom: 28px; }
+}
+
+.storefront-auth-success {
+  padding: 12px 14px;
+  border-left: 2px solid #52664d;
+  background: #f2f5ef;
+  color: #354630;
+  font-size: .85rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.storefront-auth-form .storefront-auth-otp {
+  text-align: center;
+  font-size: 1.25rem;
+  letter-spacing: .3em;
+  font-variant-numeric: tabular-nums;
+}
+.storefront-auth-secondary {
+  width: 100%;
+  min-height: 50px;
+  padding: 12px 16px;
+  border: 1px solid #d2d2cb;
+  border-radius: 2px;
+  background: transparent;
+  color: #34342f;
+  font: inherit;
+  font-size: .85rem;
+  cursor: pointer;
+}
+.storefront-auth-secondary:hover:not(:disabled) { background: #f3f3ef; }
+.storefront-auth-secondary:disabled { opacity: .6; cursor: not-allowed; }

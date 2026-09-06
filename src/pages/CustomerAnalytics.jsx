@@ -31,7 +31,7 @@ const CustomerAnalytics = () => {
           <div className="dashboard-grid">
             <section className="chart-panel"><h2>Customer Growth</h2><ResponsiveContainer height={280} width="100%"><LineChart data={data.customerGrowth}><XAxis dataKey="label" /><YAxis /><Tooltip /><Line dataKey="customers" stroke="#357266" strokeWidth={3} /></LineChart></ResponsiveContainer></section>
             <section className="chart-panel"><h2>Loyalty Ranks</h2><ResponsiveContainer height={280} width="100%"><PieChart><Pie data={data.loyaltyRankDistribution} dataKey="count" nameKey="_id" outerRadius={90}>{data.loyaltyRankDistribution.map((entry, index) => <Cell fill={colors[index % colors.length]} key={entry._id} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer></section>
-            <section className="chart-panel wide-chart"><h2>Top Customers</h2>{data.topCustomers.map((customer) => <p key={customer._id}>{customer.name} - Rs. {Number(customer.spent).toLocaleString("en-IN")} - {customer.orders} orders</p>)}</section>
+            <section className="chart-panel wide-chart"><h2>Top Customers by Order Value</h2>{data.topCustomers.map((customer) => <p key={customer._id}>{customer.name} - Order Value Rs. {Number(customer.orderValue).toLocaleString("en-IN")} - {customer.orders} orders</p>)}</section>
           </div>
         </>
       )}

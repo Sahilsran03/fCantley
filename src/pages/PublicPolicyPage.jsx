@@ -4,6 +4,7 @@ import SEO from "../components/SEO.jsx";
 import { lastUpdated, policyPages } from "../data/customerPolicies.js";
 import api from "../services/api.js";
 import { sanitizeHtml } from "../utils/sanitizeHtml.js";
+import "./Policy.css";
 
 const labels = {
   ABOUT_US: "About Cantley",
@@ -62,12 +63,12 @@ const PublicPolicyPage = ({ type, canonical }) => {
       .finally(() => setIsLoading(false));
   }, [fallback, type]);
 
-  if (isLoading) return <div className="analytics-skeleton">Loading policy...</div>;
+  if (isLoading) return <div className="cantley-policy policy-state" role="status">Loading policy...</div>;
   if (error) {
     return (
-      <section className="admin-page">
-        <div className="form-alert">{error}</div>
-        <Link className="button-link" to="/">Go home</Link>
+      <section className="cantley-policy policy-state">
+        <div className="policy-error" role="alert">{error}</div>
+        <Link className="policy-home-link" to="/">Go home</Link>
       </section>
     );
   }
@@ -78,13 +79,13 @@ const PublicPolicyPage = ({ type, canonical }) => {
     : fallback?.description || `${labels[type]} for Cantley.`;
 
   return (
-    <section className="cms-public-page">
+    <section className="cantley-policy" aria-labelledby="policy-title">
       <SEO title={title} description={description} canonical={canonical} />
-      <div className="page-heading policy-heading">
+      <header className="policy-heading">
         <p className="eyebrow">Cantley customer information</p>
-        <h1>{title}</h1>
+        <h1 id="policy-title">{title}</h1>
         <p>{description}</p>
-      </div>
+      </header>
       {policy ? (
         <div className="policy-layout">
           <aside className="policy-summary">

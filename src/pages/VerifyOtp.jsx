@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
+import "./Auth.css";
 
 const VerifyOtp = () => {
   const navigate = useNavigate();
@@ -22,6 +23,7 @@ const VerifyOtp = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (isSubmitting || isResending) return;
     setError("");
     setMessage("");
     setIsSubmitting(true);
@@ -37,6 +39,7 @@ const VerifyOtp = () => {
   };
 
   const handleResend = async () => {
+    if (isSubmitting || isResending || resendCooldown > 0 || !email) return;
     setError("");
     setMessage("");
     setIsResending(true);
@@ -53,22 +56,21 @@ const VerifyOtp = () => {
   };
 
   return (
-    <section className="auth-page">
-      <div className="auth-copy">
-        <p className="eyebrow">Email verification</p>
-        <h1>Verify OTP</h1>
+    <section className="storefront-auth" aria-labelledby="recovery-heading">
+      <header className="storefront-auth-heading">
+        <h1 id="recovery-heading">Verify your email</h1>
         <p>Enter the 6-digit code sent to your email to finish creating your account.</p>
-      </div>
+      </header>
 
-      <form className="form-panel" onSubmit={handleSubmit}>
-        {error ? <div className="form-alert">{error}</div> : null}
-        {message ? <div className="form-success">{message}</div> : null}
+      <form className="storefront-auth-form" onSubmit={handleSubmit}>
+        {error ? <div className="storefront-auth-error" role="alert">{error}</div> : null}
+        {message ? <div className="storefront-auth-success" role="status">{message}</div> : null}
 
         <label>
           Email
           <input
             name="email"
-            type="email"
+            type="email" autoComplete="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             required
@@ -76,9 +78,12 @@ const VerifyOtp = () => {
         </label>
 
         <label>
-          OTP
+          Verification code
           <input
             name="otp"
+            className="storefront-auth-otp"
+            autoComplete="one-time-code"
+            aria-describedby="otp-help"
             inputMode="numeric"
             maxLength="6"
             pattern="[0-9]{6}"
@@ -88,18 +93,25 @@ const VerifyOtp = () => {
           />
         </label>
 
+        <p className="storefront-auth-note" id="otp-help">Enter the 6-digit code from your email.</p>
+
+        <button className="storefront-auth-submit" type="submit" aria-busy={isSubmitting} disabled={isSubmitting || isResending}>
+          {isSubmitting ? "Verifying..." : "Verify and login"}
+        </button>
+
         <button
-          className="secondary-button"
+          className="storefront-auth-secondary"
+          aria-busy={isResending}
           type="button"
-          disabled={isResending || resendCooldown > 0 || !email}
+          disabled={isSubmitting || isResending || resendCooldown > 0 || !email}
           onClick={handleResend}
         >
           {isResending ? "Sending..." : resendCooldown ? `Resend OTP in ${resendCooldown}s` : "Resend OTP"}
         </button>
 
-        <button className="primary-button" type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Verifying..." : "Verify and login"}
-        </button>
+        <p className="storefront-auth-footer">
+          <Link to="/login">Back to login</Link>
+        </p>
       </form>
     </section>
   );

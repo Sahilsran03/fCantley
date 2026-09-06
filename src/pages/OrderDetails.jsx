@@ -1,15 +1,17 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import api from "../services/api.js";
 import { getMediaUrl } from "../utils/media.js";
+import CodAdvancePayment from "../components/CodAdvancePayment.jsx";
+import OrderDetailsStorefront from "./OrderDetailsStorefront.jsx";
 
 const OrderDetails = ({ admin = false }) => {
   const { id } = useParams();
   const [order, setOrder] = useState(null);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    api
+  const loadOrder = useCallback(() => {
+    return api
       .get(admin ? `/admin/orders/${id}` : `/orders/${id}`)
       .then((response) => {
         setOrder(response.data.order);
@@ -20,10 +22,18 @@ const OrderDetails = ({ admin = false }) => {
       });
   }, [admin, id]);
 
+  useEffect(() => {
+    loadOrder();
+  }, [loadOrder]);
+
+  if (!admin && (error || !order)) return <OrderDetailsStorefront error={error} onRetry={() => { setError(""); return loadOrder(); }} />;
   if (error) return <div className="form-alert">{error}</div>;
   if (!order) return <p>Loading order...</p>;
 
   const canCancel = ["Pending", "Design Review", "Approved"].includes(order.orderStatus);
+  const canReturn = order.orderStatus === "Delivered" && order.deliveredAt && Number(order.remainingCodDue || 0) === 0 && Number(order.onlineAmountPaid || 0) + Number(order.codAmountCollected || 0) >= Number(order.totalAmount || 0) && Date.now() <= new Date(order.deliveredAt).getTime() + 7 * 24 * 60 * 60 * 1000;
+
+  if (!admin) return <OrderDetailsStorefront order={order} canCancel={canCancel} canReturn={canReturn} loadOrder={loadOrder} />;
 
   return (
     <section className="order-detail-page">
@@ -69,15 +79,14 @@ const OrderDetails = ({ admin = false }) => {
             </div>
           ) : null}
           {order.discountAmount || order.discount ? <p>Discount: Rs. {Number(order.discountAmount || order.discount).toLocaleString("en-IN")}</p> : null}
-          <p>Advance: Rs. {Number(order.advanceAmount).toLocaleString("en-IN")}</p>
-          <p>Remaining: Rs. {Number(order.remainingAmount).toLocaleString("en-IN")}</p>
+          {!admin ? <CodAdvancePayment order={order} onVerified={loadOrder} onRefresh={loadOrder} /> : null}
           <p>Courier: {order.courierName || "Pending"}</p>
           <p>Tracking: {order.trackingNumber || "Pending"}</p>
           {order.estimatedDeliveryDate ? <p>ETA: {new Date(order.estimatedDeliveryDate).toLocaleDateString()}</p> : null}
           <strong>Total: Rs. {Number(order.totalAmount).toLocaleString("en-IN")}</strong>
           <div className="form-actions">
             {canCancel ? <Link className="secondary-button" to={`/returns/new?orderId=${order._id}&type=CANCEL`}>Cancel Order</Link> : null}
-            <Link className="secondary-button" to={`/returns/new?orderId=${order._id}&type=RETURN`}>Return/Refund</Link>
+            {canReturn ? <Link className="secondary-button" to={`/returns/new?orderId=${order._id}&type=RETURN`}>Request Return</Link> : null}
           </div>
           <h2>Shipping</h2>
           <p>{order.shippingAddress.fullName}</p>

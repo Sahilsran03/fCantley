@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import "./Account.css";
 import { useToast } from "../context/ToastContext.jsx";
 import api from "../services/api.js";
 
@@ -108,10 +109,10 @@ const AddressBook = () => {
     }
   };
 
-  if (isLoading) return <div className="analytics-skeleton">Loading addresses...</div>;
+  if (isLoading) return <section className="cantley-account"><div className="account-state" role="status">Loading addresses...</div></section>;
 
   return (
-    <section className="admin-page">
+    <section className="cantley-account">
       <div className="page-heading row-heading">
         <div>
           <p className="eyebrow">Address Book</p>
@@ -124,7 +125,8 @@ const AddressBook = () => {
       </div>
 
       <form className="form-panel wide-form" onSubmit={submitAddress}>
-        {error ? <div className="form-alert">{error}</div> : null}
+        <h2>{editingId ? "Edit address" : "Add an address"}</h2>
+        {error ? <div className="form-alert" role="alert">{error}</div> : null}
         <div className="form-grid">
           <label>
             Full name

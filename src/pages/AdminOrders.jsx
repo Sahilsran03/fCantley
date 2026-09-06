@@ -45,6 +45,10 @@ const AdminOrders = () => {
               </div>
               <span>{order.orderStatus}</span>
               <span>{order.paymentStatus}</span>
+              <span>Order Value: Rs. {Number(order.totalAmount || 0).toLocaleString("en-IN")}</span>
+              <span>Online Received: Rs. {Number(order.onlineAmountPaid || 0).toLocaleString("en-IN")}</span>
+              <span>COD Collected: Rs. {Number(order.codAmountCollected || 0).toLocaleString("en-IN")}</span>
+              <span>Remaining COD: Rs. {Number(order.remainingCodDue || 0).toLocaleString("en-IN")}</span>
               <Link to={`/admin/orders/${order._id}`}>Manage</Link>
             </div>
           ))}

@@ -1,312 +1,40 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import ProductCard from "../components/ProductCard.jsx";
-import SEO from "../components/SEO.jsx";
-import { ProductGridSkeleton } from "../components/Skeleton.jsx";
-import { useAuth } from "../context/AuthContext.jsx";
-import { useToast } from "../context/ToastContext.jsx";
-import { useWishlist } from "../context/WishlistContext.jsx";
-import api from "../services/api.js";
-import { getOptimizedImageUrl } from "../utils/media.js";
+import React,{useEffect,useMemo,useState}from"react";
+import{Link}from"react-router-dom";
+import ProductCard from"../components/ProductCard.jsx";
+import SEO from"../components/SEO.jsx";
+import{ProductGridSkeleton}from"../components/Skeleton.jsx";
+import{useAuth}from"../context/AuthContext.jsx";
+import{useWishlist}from"../context/WishlistContext.jsx";
+import api from"../services/api.js";
+import{getMediaUrl,getOptimizedImageUrl}from"../utils/media.js";
+import"./Home.css";
 
-const productGroups = [
-  { key: "featured", title: "Featured products", params: "featured=true&limit=6&sort=featured" },
-  { key: "trending", title: "Trending products", params: "limit=6&sort=most-viewed" },
-  { key: "bestSelling", title: "Best sellers", params: "limit=6&sort=best-selling" },
-  { key: "recent", title: "Recently added", params: "limit=6&sort=latest" },
-  { key: "topRated", title: "Top-rated products", params: "limit=6&sort=rating" }
-];
-
-const fallbackTiles = [
-  { title: "Custom tees", text: "Print-ready everyday apparel", to: "/shop?productType=tshirt" },
-  { title: "Labels", text: "Packaging details for small brands", to: "/shop?productType=label" },
-  { title: "Sticker drops", text: "Sharp finish for product launches", to: "/shop?productType=sticker" }
-];
-
-const Home = () => {
-  const { isAuthenticated } = useAuth();
-  const { showToast } = useToast();
-  const { products: wishlistProducts } = useWishlist();
-  const [categories, setCategories] = useState([]);
-  const [announcements, setAnnouncements] = useState([]);
-  const [groups, setGroups] = useState({});
-  const [recentItems, setRecentItems] = useState([]);
-  const [faqs, setFaqs] = useState([]);
-  const [email, setEmail] = useState("");
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    const loadHome = async () => {
-      try {
-        const [categoryResponse, announcementResponse, faqResponse, ...productResponses] = await Promise.all([
-          api.get("/categories", { signal: controller.signal }),
-          api.get("/announcements", { signal: controller.signal }),
-          api.get("/faqs", { signal: controller.signal }).catch(() => ({ data: { faqs: [] } })),
-          ...productGroups.map((group) => api.get(`/products?${group.params}`, { signal: controller.signal }))
-        ]);
-        setCategories(categoryResponse.data.categories || []);
-        setAnnouncements(announcementResponse.data.announcements || []);
-        setFaqs(faqResponse.data.faqs || []);
-        setGroups(
-          productGroups.reduce((nextGroups, group, index) => {
-            nextGroups[group.key] = productResponses[index].data.products || [];
-            return nextGroups;
-          }, {})
-        );
-      } catch (error) {
-        if (error.name !== "CanceledError") {
-          setCategories([]);
-          setAnnouncements([]);
-          setGroups({});
-          setFaqs([]);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadHome();
-    return () => controller.abort();
-  }, []);
-
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    api
-      .get("/recently-viewed")
-      .then((response) => setRecentItems(response.data.products || []))
-      .catch(() => setRecentItems([]));
-  }, [isAuthenticated]);
-
-  const reviewProducts = useMemo(
-    () => (groups.topRated || []).filter((product) => Number(product.ratingCount || 0) > 0).slice(0, 3),
-    [groups.topRated]
-  );
-  const heroProducts = (groups.featured || []).slice(0, 3);
-  const activeAnnouncement = announcements[0];
-  const subscribe = (event) => {
-    event.preventDefault();
-    showToast("Thanks. Cantley updates will reach your inbox soon.");
-    setEmail("");
-  };
-
-  return (
-    <section className="home-stack">
-      <SEO
-        title="Cantley Custom Apparel, Stickers, Labels and Design Studio"
-        description="Shop Cantley custom-ready clothing, stickers, labels, trending products, top-rated picks, and saved design workflows."
-        canonical="/"
-      />
-
-      <div className="home-hero">
-        <div className="home-hero-copy">
-          <p className="eyebrow">Cantley Custom Studio</p>
-          <h1>Premium custom wear, labels, and print-ready brand goods</h1>
-          <p className="lead">
-            Shop curated products, upload artwork, build bulk orders, and track every Cantley order from cart to delivery.
-          </p>
-          <div className="hero-proof-row">
-            <span>COD available</span>
-            <span>Design uploads</span>
-            <span>Bulk quotes</span>
-          </div>
-          <div className="hero-actions">
-            <Link className="button-link" to="/shop">Shop products</Link>
-            <Link className="secondary-button" to="/design-studio">Open Design Studio</Link>
-            <Link className="secondary-button" to="/track-order">Track Order</Link>
-          </div>
-        </div>
-        <div className="hero-showcase" aria-label="Cantley featured products">
-          {heroProducts.map((product) => (
-            <Link className="hero-tile" to={`/products/${product.slug}`} key={product._id}>
-              <img src={getOptimizedImageUrl(product.images?.[0], { width: 520 })} alt={product.name} loading="lazy" />
-              <span>{product.name}</span>
-            </Link>
-          ))}
-          {!heroProducts.length ? fallbackTiles.map((tile) => (
-            <Link className="hero-tile fallback" to={tile.to} key={tile.title}>
-              <strong>{tile.title}</strong>
-              <span>{tile.text}</span>
-            </Link>
-          )) : null}
-        </div>
-      </div>
-
-      <section className="offer-ribbon">
-        <div>
-          <p className="eyebrow">Limited Cantley offer</p>
-          <h2>Buy 5 Get 1 Free on eligible T-shirt orders</h2>
-          <p>Build team kits, launch drops, or event merchandise with reward tracking applied during checkout.</p>
-        </div>
-        <Link className="button-link" to="/shop?productType=tshirt">Shop the offer</Link>
-      </section>
-
-      {activeAnnouncement ? (
-        <section className="announcement-section">
-          <div>
-            <p className="eyebrow">Announcement</p>
-            <h2>{activeAnnouncement.title}</h2>
-            <p>{activeAnnouncement.message}</p>
-          </div>
-          {activeAnnouncement.buttonLink ? <Link className="button-link" to={activeAnnouncement.buttonLink}>{activeAnnouncement.buttonText || "Explore"}</Link> : null}
-        </section>
-      ) : null}
-
-      <section className="category-strip">
-        <div className="row-heading">
-          <div>
-            <p className="eyebrow">Categories</p>
-            <h2>Shop by collection</h2>
-          </div>
-          <Link className="text-link" to="/shop">View all</Link>
-        </div>
-        <div className="category-grid">
-          {categories.slice(0, 6).map((category) => (
-            <Link className="category-card" to={`/shop?category=${category.slug}`} key={category._id}>
-              <img src={getOptimizedImageUrl(category.image, { width: 420 }) || "https://placehold.co/420x300/f1f5f9/334155?text=Cantley"} alt={category.name} loading="lazy" />
-              <strong>{category.name}</strong>
-              <span>{category.description || "Explore Cantley products"}</span>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {loading ? <ProductGridSkeleton /> : productGroups.map((group) => (
-        <section className="catalog-section" key={group.key}>
-          <div className="row-heading">
-            <div>
-              <p className="eyebrow">{group.title}</p>
-              <h2>{group.key === "featured" ? "Made for the front row" : group.key === "trending" ? "Customers are watching these" : group.key === "bestSelling" ? "Most ordered by Cantley buyers" : group.key === "recent" ? "Fresh in the catalog" : "Loved by buyers"}</h2>
-            </div>
-            <Link className="text-link" to={`/shop?sort=${group.key === "topRated" ? "highest-rated" : group.key === "bestSelling" ? "best-selling" : group.key === "recent" ? "latest" : group.key}`}>Browse</Link>
-          </div>
-          <div className="product-grid">
-            {(groups[group.key] || []).slice(0, 3).map((product) => <ProductCard key={product._id} product={product} />)}
-          </div>
-        </section>
-      ))}
-
-      <section className="cta-split">
-        <div className="cta-panel studio-cta">
-          <p className="eyebrow">Custom printing</p>
-          <h2>Upload your artwork and preview the idea</h2>
-          <p>Use the Cantley Design Studio for tees, hoodies, stickers, and labels before placing an order.</p>
-          <Link className="button-link" to="/design-studio">Start designing</Link>
-        </div>
-        <div className="cta-panel bulk-cta">
-          <p className="eyebrow">Bulk orders</p>
-          <h2>Planning merch for teams, events, or launches?</h2>
-          <p>Share quantities, artwork, and deadlines so Cantley can prepare a manual quote.</p>
-          <Link className="secondary-button" to="/bulk-orders">Request a quote</Link>
-        </div>
-      </section>
-
-      <section className="how-it-works">
-        <div className="row-heading">
-          <div>
-            <p className="eyebrow">How it works</p>
-            <h2>From idea to doorstep</h2>
-          </div>
-        </div>
-        <div className="steps-grid">
-          {[
-            ["Choose", "Pick a Cantley product, variant, material, and quantity."],
-            ["Customize", "Upload proof files or design directly in the studio."],
-            ["Confirm", "Place a COD order and complete manual advance confirmation."],
-            ["Track", "Follow printing, shipping, delivery, and support updates."]
-          ].map(([title, text], index) => (
-            <article className="step-card" key={title}>
-              <span>{String(index + 1).padStart(2, "0")}</span>
-              <h3>{title}</h3>
-              <p>{text}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      {reviewProducts.length ? (
-        <section className="reviews-section">
-          <div>
-            <p className="eyebrow">Reviews</p>
-            <h2>Top-rated by Cantley customers</h2>
-          </div>
-          <div className="review-highlight-grid">
-            {reviewProducts.map((product) => (
-              <Link className="review-highlight" to={`/products/${product.slug}`} key={product._id}>
-                <strong>{Number(product.ratingAverage || 0).toFixed(1)} / 5</strong>
-                <span>{product.name}</span>
-                <p>{product.ratingCount} verified reviews</p>
-              </Link>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      <section className="faq-preview">
-        <div className="row-heading">
-          <div>
-            <p className="eyebrow">FAQ</p>
-            <h2>Quick answers before you order</h2>
-          </div>
-          <Link className="text-link" to="/faq">Read all FAQs</Link>
-        </div>
-        <div className="faq-preview-grid">
-          {(faqs.length ? faqs.slice(0, 3) : [
-            { _id: "cod", title: "Is COD available?", content: "Cantley supports COD where shipping zones allow it, with manual advance confirmation for processing." },
-            { _id: "custom", title: "Can I upload custom artwork?", content: "Yes. Use Design Studio or bulk quote forms to upload print-ready files and proof images." },
-            { _id: "bulk", title: "Do you handle bulk orders?", content: "Yes. Submit a quote request with quantities, timeline, and customization notes." }
-          ]).map((faq) => (
-            <article className="faq-card" key={faq._id || faq.title}>
-              <h3>{faq.title}</h3>
-              <p>{String(faq.content || "").replace(/<[^>]*>/g, "").slice(0, 150)}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="newsletter-panel">
-        <div>
-          <p className="eyebrow">Stay close</p>
-          <h2>Get Cantley launches, offers, and printing ideas</h2>
-          <p>No spam, just useful product drops and custom-order inspiration.</p>
-        </div>
-        <form onSubmit={subscribe}>
-          <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Email address" aria-label="Email address" required />
-          <button className="primary-button" type="submit">Notify me</button>
-        </form>
-      </section>
-
-      {isAuthenticated && recentItems.length ? (
-        <section className="catalog-section">
-          <div className="row-heading">
-            <div>
-              <p className="eyebrow">Recently viewed</p>
-              <h2>Back on your radar</h2>
-            </div>
-            <Link className="text-link" to="/recently-viewed">View history</Link>
-          </div>
-          <div className="product-grid">
-            {recentItems.slice(0, 3).map((item) => item.product ? <ProductCard key={item.product._id} product={item.product} /> : null)}
-          </div>
-        </section>
-      ) : null}
-
-      {isAuthenticated && wishlistProducts.length ? (
-        <section className="catalog-section">
-          <div className="row-heading">
-            <div>
-              <p className="eyebrow">Wishlist</p>
-              <h2>Saved picks</h2>
-            </div>
-            <Link className="text-link" to="/wishlist">Open wishlist</Link>
-          </div>
-          <div className="product-grid">
-            {wishlistProducts.slice(0, 3).map((product) => <ProductCard key={product._id} product={product} />)}
-          </div>
-        </section>
-      ) : null}
-    </section>
-  );
-};
-
-export default Home;
+const blank={items:[],loading:true,error:""};
+export default function Home(){
+ const{isAuthenticated}=useAuth(),{products:wishlist}=useWishlist();
+ const[categories,setCategories]=useState(blank),[featured,setFeatured]=useState(blank),[trending,setTrending]=useState(blank),[faqs,setFaqs]=useState(blank),[recent,setRecent]=useState([]);
+ useEffect(()=>{const controller=new AbortController(),load=(url,setter,key)=>api.get(url,{signal:controller.signal}).then(r=>setter({items:r.data[key]||[],loading:false,error:""})).catch(e=>{if(e.name!=="CanceledError")setter({items:[],loading:false,error:"Content is unavailable right now."})});
+  load("/categories",setCategories,"categories");load("/products?featured=true&limit=6&sort=featured",setFeatured,"products");load("/products?limit=6&sort=most-viewed",setTrending,"products");load("/faqs",setFaqs,"faqs");return()=>controller.abort()},[]);
+ useEffect(()=>{if(!isAuthenticated){setRecent([]);return}const controller=new AbortController();api.get("/recently-viewed",{signal:controller.signal}).then(r=>setRecent((r.data.products||[]).map(x=>x?.product||x).filter(Boolean))).catch(e=>{if(e.name!=="CanceledError")setRecent([])});return()=>controller.abort()},[isAuthenticated]);
+ const hero=featured.items.filter(p=>getMediaUrl(p.images?.[0])).slice(0,3);
+ const ratings=useMemo(()=>[...featured.items,...trending.items].filter((p,i,a)=>Number(p.ratingCount||0)>0&&a.findIndex(x=>x._id===p._id)===i).sort((a,b)=>Number(b.ratingAverage)-Number(a.ratingAverage)).slice(0,3),[featured.items,trending.items]);
+ const personal=recent.length?recent:wishlist.slice(0,4),personalTitle=recent.length?"Recently viewed":"Saved for you",personalLink=recent.length?"/recently-viewed":"/wishlist";
+ const Products=({label,title,feed,id})=>{if(!feed.loading&&!feed.error&&!feed.items.length)return null;return <section className="home-section home-products" aria-labelledby={id}><Heading label={label} title={title} id={id} link="/shop"/>{feed.loading&&<div className="home-loading" role="status"><span>Loading {label.toLowerCase()} products</span><ProductGridSkeleton count={4}/></div>}{feed.error&&<p className="home-state" role="status">{feed.error}</p>}{!feed.loading&&!feed.error&&<div className="home-product-grid">{feed.items.slice(0,4).map(p=><ProductCard key={p._id} product={p}/>)}</div>}</section>};
+ const Heading=({label,title,id,link})=><div className="home-heading"><div><p>{label}</p><h2 id={id}>{title}</h2></div>{link&&<Link to={link}>View all</Link>}</div>;
+ return <div className="cantley-home">
+  <SEO title="Cantley Custom Apparel, Stickers, Labels and Design Studio" description="Shop Cantley clothing, stickers, labels, featured products, and custom design options." canonical="/"/>
+  <section className={"editorial-hero "+(!hero.length?"is-typographic":"")} aria-labelledby="home-title">
+   <div className="hero-media">{featured.loading&&<div className="hero-loading" role="status">Loading featured products</div>}{!featured.loading&&hero.length>0&&<><Link className="hero-primary" to={"/products/"+hero[0].slug}><img src={getOptimizedImageUrl(hero[0].images?.[0],{width:1000})} alt={hero[0].name} loading="eager" fetchPriority="high" width="1000" height="1250"/><span>{hero[0].name}</span></Link>{hero.slice(1).map(p=><Link className="hero-support" to={"/products/"+p.slug} key={p._id}><img src={getOptimizedImageUrl(p.images?.[0],{width:480})} alt={p.name} loading="eager" width="480" height="600"/></Link>)}</>}</div>
+   <div className="hero-copy"><p className="home-kicker">Cantley / Made to be worn</p><h1 id="home-title">Everyday pieces. Your own point of view.</h1><p>Discover Cantley apparel, labels, and product drops, or make the next piece your own.</p><div className="hero-ctas"><Link className="home-primary" to="/shop">Shop now</Link><Link className="home-text-link" to="/design-studio">Design your own</Link></div></div>
+  </section>
+  {(categories.loading||categories.error||categories.items.length>0)&&<section className="home-section home-categories" aria-labelledby="category-title"><Heading label="Explore Cantley" title="Shop by category" id="category-title" link={!categories.error?"/shop":null}/>{categories.loading&&<div className="category-grid-home category-loading" role="status"><span>Loading categories</span>{[1,2,3,4].map(x=><i key={x}/>)}</div>}{categories.error&&<p className="home-state" role="status">{categories.error}</p>}{!categories.loading&&!categories.error&&<div className="category-grid-home">{categories.items.slice(0,6).map(c=><Link className="category-tile-home" to={"/shop?category="+c.slug} key={c._id}><img src={getOptimizedImageUrl(c.image,{width:560})||"https://placehold.co/560x700/f1f0ec/333?text=Cantley"} alt={c.name} loading="lazy" width="560" height="700"/><span>{c.name}</span></Link>)}</div>}</section>}
+  <Products label="Featured" title="The Cantley edit" feed={featured} id="featured-title"/>
+  <section className="home-section studio-editorial" aria-labelledby="studio-title"><div className="studio-mark" aria-hidden="true">C / STUDIO</div><div><p className="home-kicker">Make it personal</p><h2 id="studio-title">Start with an idea. Make it yours.</h2><p>Use Cantley Design Studio to add your artwork and preview a custom product before ordering.</p><Link className="home-light" to="/design-studio">Open Design Studio</Link></div></section>
+  <Products label="Trending" title="On the radar" feed={trending} id="trending-title"/>
+  <section className="home-section service-strip" aria-label="Shopping with Cantley">{[["01","Shop products","Browse current categories and products."],["02","Secure checkout","Complete payment through the existing checkout."],["03","Order tracking","Follow an order using Cantley tracking."],["04","Design Studio","Prepare a custom product from your artwork."]].map(x=><div key={x[0]}><span>{x[0]}</span><strong>{x[1]}</strong><p>{x[2]}</p></div>)}</section>
+  <section className="home-section bulk-editorial" aria-labelledby="bulk-title"><div><p className="home-kicker">For teams, events and brands</p><h2 id="bulk-title">Need more than one?</h2></div><p>Share your quantities, artwork, and requirements with Cantley for a bulk-order quote.</p><Link className="home-outline" to="/bulk-orders">Request a quote</Link></section>
+  {ratings.length>0&&<section className="home-section home-ratings" aria-labelledby="ratings-title"><Heading label="Customer ratings" title="Top rated by customers" id="ratings-title"/><div className="rating-grid-home">{ratings.map(p=><Link to={"/products/"+p.slug} key={p._id}><strong>{Number(p.ratingAverage||0).toFixed(1)} <span>/ 5</span></strong><p>{p.name}</p><small>{p.ratingCount} {p.ratingCount===1?"rating":"ratings"}</small></Link>)}</div></section>}
+  {!faqs.loading&&!faqs.error&&faqs.items.length>0&&<section className="home-section home-faq" aria-labelledby="faq-title"><Heading label="Questions" title="Good to know" id="faq-title" link="/faq"/><div className="faq-grid-home">{faqs.items.slice(0,3).map(f=><article key={f._id||f.title}><h3>{f.title}</h3><p>{String(f.content||"").replace(/<[^>]*>/g,"").slice(0,170)}</p></article>)}</div></section>}
+  {isAuthenticated&&personal.length>0&&<section className="home-section home-personal" aria-labelledby="personal-title"><Heading label="Just for you" title={personalTitle} id="personal-title" link={personalLink}/><div className="home-product-grid">{personal.slice(0,4).map(p=><ProductCard key={p._id} product={p}/>)}</div></section>}
+ </div>
+}

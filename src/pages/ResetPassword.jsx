@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import PasswordField from "../components/PasswordField.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
+import "./Auth.css";
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ const ResetPassword = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (isSubmitting || message) return;
     setError("");
     setMessage("");
 
@@ -40,20 +42,21 @@ const ResetPassword = () => {
   };
 
   return (
-    <section className="auth-page">
-      <div className="auth-copy">
-        <p className="eyebrow">Account security</p>
-        <h1>Reset password</h1>
+    <section className="storefront-auth" aria-labelledby="recovery-heading">
+      <header className="storefront-auth-heading">
+        <h1 id="recovery-heading">Reset password</h1>
         <p>Create a new Cantley password. The reset link expires after a short time for your safety.</p>
-      </div>
+      </header>
 
-      <form className="form-panel" onSubmit={handleSubmit}>
-        {error ? <div className="form-alert">{error}</div> : null}
-        {message ? <div className="form-success">{message}</div> : null}
+      <form className="storefront-auth-form" onSubmit={handleSubmit}>
+        {error ? <div className="storefront-auth-error" role="alert">{error}</div> : null}
+        {message ? <div className="storefront-auth-success" role="status">{message}</div> : null}
 
         <PasswordField
           label="New password"
           name="password"
+          autoComplete="new-password"
+          aria-describedby="password-help"
           minLength="8"
           value={form.password}
           onChange={updateField}
@@ -63,17 +66,21 @@ const ResetPassword = () => {
         <PasswordField
           label="Confirm password"
           name="confirmPassword"
+          autoComplete="new-password"
+          aria-describedby="password-help"
           minLength="8"
           value={form.confirmPassword}
           onChange={updateField}
           required
         />
 
-        <button className="primary-button" type="submit" disabled={isSubmitting}>
+        <p className="storefront-auth-note" id="password-help">Use at least 8 characters. Both passwords must match.</p>
+
+        <button className="storefront-auth-submit" type="submit" aria-busy={isSubmitting} disabled={isSubmitting || Boolean(message)}>
           {isSubmitting ? "Resetting..." : "Reset password"}
         </button>
 
-        <p className="form-footer">
+        <p className="storefront-auth-footer">
           <Link to="/login">Back to login</Link>
         </p>
       </form>

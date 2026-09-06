@@ -16,6 +16,8 @@ const emptyProduct = {
   category: "",
   productType: "tshirt",
   basePrice: "",
+  codAvailable: true,
+  codAdvanceAmount: 0,
   isActive: true,
   isFeatured: false,
   tags: "",
@@ -31,6 +33,8 @@ const productToForm = (product) => ({
   category: product?.category?._id || product?.category || "",
   productType: product?.productType || "tshirt",
   basePrice: product?.basePrice ?? "",
+  codAvailable: product?.codAvailable ?? true,
+  codAdvanceAmount: product?.codAdvanceAmount ?? 0,
   isActive: product?.isActive ?? true,
   isFeatured: product?.isFeatured ?? false,
   tags: product?.tags?.join(", ") || "",
@@ -193,6 +197,8 @@ const ProductForm = ({ categories, initialProduct, submitLabel, onSubmit }) => {
     appendField(data, "category", form.category);
     appendField(data, "productType", form.productType);
     appendField(data, "basePrice", form.basePrice);
+    appendField(data, "codAvailable", form.codAvailable);
+    appendField(data, "codAdvanceAmount", form.codAdvanceAmount);
     appendField(data, "isActive", form.isActive);
     appendField(data, "isFeatured", form.isFeatured);
     appendField(data, "ratingAverage", form.ratingAverage);
@@ -265,6 +271,10 @@ const ProductForm = ({ categories, initialProduct, submitLabel, onSubmit }) => {
         <label>
           Base price
           <input name="basePrice" type="number" min="0" value={form.basePrice} onChange={updateField} required />
+        </label>
+        <label>
+          Required online advance (Rs.)
+          <input name="codAdvanceAmount" type="number" min="0" value={form.codAdvanceAmount} onChange={updateField} />
         </label>
         <label>
           Rating average
@@ -350,6 +360,10 @@ const ProductForm = ({ categories, initialProduct, submitLabel, onSubmit }) => {
       />
 
       <div className="checkbox-row">
+        <label>
+          <input name="codAvailable" type="checkbox" checked={form.codAvailable} onChange={updateField} />
+          COD available
+        </label>
         <label>
           <input name="isActive" type="checkbox" checked={form.isActive} onChange={updateField} />
           Active

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import "./Account.css";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useToast } from "../context/ToastContext.jsx";
 
@@ -65,10 +66,10 @@ const ProfileEdit = () => {
     }
   };
 
-  if (isLoading) return <div className="analytics-skeleton">Loading profile...</div>;
+  if (isLoading) return <section className="cantley-account"><div className="account-state" role="status">Loading profile...</div></section>;
 
   return (
-    <section className="admin-page">
+    <section className="cantley-account">
       <div className="page-heading row-heading">
         <div>
           <p className="eyebrow">Profile</p>
@@ -81,7 +82,7 @@ const ProfileEdit = () => {
       </div>
 
       <form className="form-panel wide-form" onSubmit={submitProfile}>
-        {error ? <div className="form-alert">{error}</div> : null}
+        {error ? <div className="form-alert" role="alert">{error}</div> : null}
         <div className="form-grid">
           <label>
             Name

@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useToast } from "../context/ToastContext.jsx";
 import api from "../services/api.js";
+import "./Quotes.css";
 
 const maxFileSize = 40 * 1024 * 1024;
 const initialForm = {
@@ -24,6 +25,7 @@ const BulkOrders = () => {
   const [successQuote, setSuccessQuote] = useState(null);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submitLock = useRef(false);
 
   const updateField = (event) => {
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
@@ -47,6 +49,8 @@ const BulkOrders = () => {
 
   const submitQuote = async (event) => {
     event.preventDefault();
+    if (submitLock.current) return;
+    const formElement = event.currentTarget;
     setError("");
     setSuccessQuote(null);
 
@@ -63,34 +67,37 @@ const BulkOrders = () => {
     Object.entries(form).forEach(([key, value]) => data.append(key, value));
     files.forEach((file) => data.append("designFiles", file));
 
+    submitLock.current = true;
     setIsSubmitting(true);
     try {
       const response = await api.post("/quotes", data);
       setSuccessQuote(response.data.quote);
       setForm(initialForm);
       setFiles([]);
-      event.currentTarget.reset();
+      formElement.reset();
       showToast("Quote request submitted.");
     } catch (requestError) {
       setError(requestError.response?.data?.message || "Unable to submit quote request.");
     } finally {
+      submitLock.current = false;
       setIsSubmitting(false);
     }
   };
 
   return (
-    <section className="bulk-page">
-      <div className="bulk-hero">
+    <section className="cantley-quotes">
+      <div className="quotes-hero">
         <div>
-          <p className="eyebrow">Bulk Orders</p>
-          <h1>Custom printing quotes for teams, schools, brands, and businesses.</h1>
+          <p className="eyebrow">Cantley for your business</p>
+          <h1>Bulk Orders</h1>
+          <h2>Custom printing for teams, schools, brands, and businesses.</h2>
           <p className="lead">Share your quantity, product type, size split, and artwork. Cantley will review the request and respond with a custom quote.</p>
           <div className="hero-actions">
             <a className="button-link" href="#quote-form">Request Quote</a>
             <Link className="secondary-button" to="/quotes">My Quotes</Link>
           </div>
         </div>
-        <div className="bulk-proof-panel">
+        <div className="quotes-intro-panel">
           <strong>Built for B2B printing</strong>
           <span>School events</span>
           <span>Brand merch</span>
@@ -102,14 +109,14 @@ const BulkOrders = () => {
       <form className="form-panel wide-form" id="quote-form" onSubmit={submitQuote}>
         <div className="page-heading">
           <p className="eyebrow">Request Quote</p>
-          <h1>Tell us what you need</h1>
+          <h2>Tell us what you need</h2>
         </div>
         {successQuote ? (
-          <div className="form-success">
-            Quote request received. Status: {successQuote.status}. We will contact you soon.
+          <div className="form-success" role="status">
+            Quote request received.{successQuote.status ? ` Status: ${successQuote.status}.` : ""}{successQuote._id ? ` Reference: ${successQuote._id}.` : ""}
           </div>
         ) : null}
-        {error ? <div className="form-alert">{error}</div> : null}
+        {error ? <div className="form-alert" role="alert">{error}</div> : null}
         <div className="form-grid">
           <label>
             Name

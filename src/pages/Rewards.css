@@ -1,0 +1,43 @@
+.cantley-rewards { width:min(100%,1120px); margin:0 auto; padding:24px clamp(16px,3vw,32px) 64px; color:#171714; }
+.cantley-rewards *, .cantley-rewards *::before, .cantley-rewards *::after { box-sizing:border-box; }
+.rewards-heading { margin-bottom:28px; padding:8px 0 28px; border-bottom:1px solid #deded7; }
+.rewards-eyebrow { margin:0 0 10px; color:#6b6b67; font-size:.72rem; letter-spacing:.14em; text-transform:uppercase; }
+.cantley-rewards h1 { margin:0; font-size:clamp(2rem,4vw,3.75rem); font-weight:500; line-height:1.08; letter-spacing:-.045em; }
+.rewards-heading > p:last-child { margin:16px 0 0; color:#6b6b67; font-size:.95rem; line-height:1.65; }
+.cantley-rewards h2 { margin:0 0 18px; font-size:1.1rem; font-weight:500; letter-spacing:-.02em; }
+.rewards-overview { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:24px; }
+.rewards-balance, .rewards-earn { min-width:0; padding:28px; border:1px solid #deded7; background:#fff; }
+.rewards-balance { display:flex; flex-direction:column; justify-content:center; background:#f6f5f0; }
+.rewards-balance h2 { font-size:.85rem; color:#6b6b67; letter-spacing:0; }
+.rewards-balance strong { font-size:clamp(1.7rem,3vw,2.5rem); font-weight:500; letter-spacing:-.035em; }
+.rewards-balance p, .rewards-earn p { margin:14px 0 0; color:#6b6b67; font-size:.85rem; line-height:1.65; }
+.rewards-earn p { margin:0 0 16px; }
+.rewards-earn a { display:flex; justify-content:space-between; align-items:center; gap:16px; min-height:48px; padding:12px 0; border-top:1px solid #e5e5dd; font-size:.85rem; }
+.rewards-earn a:hover { text-decoration:underline; text-underline-offset:4px; }
+.rewards-history { margin-top:36px; }
+.rewards-list { margin:0; padding:0; list-style:none; border-top:1px solid #deded7; }
+.rewards-row { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,.7fr) minmax(0,.8fr); gap:24px; align-items:center; padding:24px; border-bottom:1px solid #deded7; background:#fff; }
+.rewards-row > * { min-width:0; }
+.rewards-row h3 { margin:0; font-size:.95rem; font-weight:500; line-height:1.5; }
+.rewards-row-copy p { margin:8px 0 0; color:#6b6b67; font-size:.85rem; line-height:1.65; white-space:pre-line; }
+.rewards-label { display:block; margin-bottom:7px; color:#6b6b67; font-size:.72rem; }
+.rewards-status { display:inline-block; padding:5px 9px; background:#eeeee7; font-size:.78rem; }
+.rewards-row-amount { text-align:right; }
+.rewards-row-amount strong { font-size:1rem; font-weight:500; }
+.rewards-state { display:grid; justify-items:center; gap:16px; padding:48px 20px; background:#f6f5f0; text-align:center; }
+.rewards-state h3 { margin:0; font-size:1.25rem; font-weight:500; }
+.rewards-state p { margin:0; max-width:460px; color:#6b6b67; font-size:.88rem; line-height:1.65; }
+.cantley-rewards .rewards-button, .cantley-rewards .primary-button { display:inline-flex; justify-content:center; align-items:center; width:fit-content; max-width:100%; min-height:44px; padding:12px 20px; border:1px solid #171714; border-radius:0; background:#171714; color:#fff; font:inherit; font-size:.8rem; white-space:normal; cursor:pointer; }
+.cantley-rewards button:hover:not(:disabled) { background:#393932; }
+.cantley-rewards button:disabled { opacity:.55; cursor:wait; }
+.cantley-rewards :is(button,a,input):focus-visible { outline:2px solid #706346; outline-offset:4px; }
+.cantley-rewards :is(h1,h2,h3,p,strong,span,a,button) { overflow-wrap:anywhere; }
+.cantley-rewards .form-panel { display:grid; gap:24px; width:100%; max-width:720px; margin:0; padding:28px; border:1px solid #deded7; border-radius:0; background:#fff; box-shadow:none; }
+.cantley-rewards label { display:grid; gap:10px; min-width:0; color:#5c5c56; font-size:.85rem; }
+.cantley-rewards input { width:100%; min-width:0; min-height:46px; padding:12px; border:1px solid #deded7; border-radius:0; background:#fff; color:#171714; font:inherit; }
+.cantley-rewards .form-alert { margin:0; padding:16px; border-radius:0; font-size:.88rem; }
+.rewards-loader { width:32px; height:32px; border:2px solid #deded7; border-top-color:#171714; border-radius:50%; animation:rewards-spin 1s linear infinite; }
+@keyframes rewards-spin { to { transform:rotate(360deg); } }
+@media(prefers-reduced-motion:reduce) { .rewards-loader { animation:none; } }
+@media(max-width:760px) { .rewards-overview { grid-template-columns:minmax(0,1fr); } .rewards-row { grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:18px; } .rewards-row-copy { grid-column:1/-1; } }
+@media(max-width:480px) { .cantley-rewards { padding-top:16px; } .rewards-balance,.rewards-earn,.rewards-row,.cantley-rewards .form-panel { padding:20px; } .rewards-state { padding:40px 16px; } }

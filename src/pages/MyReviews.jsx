@@ -29,7 +29,7 @@ const MyReviews = () => {
       {!isLoading && !reviews.length && !error ? (
         <div className="empty-state">
           <h2>No reviews yet</h2>
-          <p>Review purchased Cantley products to earn wallet rewards.</p>
+          <p>Earn Rs. 10 wallet credit for one eligible written review per product per delivered and fully paid order.</p>
           <Link className="button-link" to="/orders">
             View orders
           </Link>

@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import GoogleAuthButton from "../components/GoogleAuthButton.jsx";
 import PasswordField from "../components/PasswordField.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
+import "./Auth.css";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -9,6 +11,7 @@ const Register = () => {
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGooglePending, setIsGooglePending] = useState(false);
 
   const updateField = (event) => {
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
@@ -16,6 +19,7 @@ const Register = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (isGooglePending || isSubmitting) return;
     setError("");
     setIsSubmitting(true);
 
@@ -30,45 +34,51 @@ const Register = () => {
   };
 
   return (
-    <section className="auth-page">
-      <div className="auth-copy">
-        <p className="eyebrow">Create account</p>
-        <h1>Register</h1>
-        <p>Enter your details and Cantley will send an OTP before creating your account.</p>
-      </div>
+    <section className="storefront-auth" aria-labelledby="auth-heading">
+      <header className="storefront-auth-heading">
+        <h1 id="auth-heading">Create your account</h1>
+        <p>Join Cantley</p>
+      </header>
 
-      <form className="form-panel" onSubmit={handleSubmit}>
-        {error ? <div className="form-alert">{error}</div> : null}
+      <form className="storefront-auth-form" onSubmit={handleSubmit} aria-describedby="registration-note">
+        {error ? <div className="storefront-auth-error" role="alert">{error}</div> : null}
 
         <label>
           Name
-          <input name="name" value={form.name} onChange={updateField} required minLength="2" />
+          <input name="name" autoComplete="name" value={form.name} onChange={updateField} required minLength="2" />
         </label>
 
         <label>
           Email
-          <input name="email" type="email" value={form.email} onChange={updateField} required />
+          <input name="email" type="email" autoComplete="email" value={form.email} onChange={updateField} required />
         </label>
 
         <label>
           Phone
-          <input name="phone" value={form.phone} onChange={updateField} required />
+          <input name="phone" type="tel" autoComplete="tel" value={form.phone} onChange={updateField} required />
         </label>
 
         <PasswordField
           name="password"
           value={form.password}
           onChange={updateField}
-          required
+          autoComplete="new-password"
           minLength="8"
+          required
         />
 
-        <button className="primary-button" type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Sending OTP..." : "Send OTP"}
+        <p className="storefront-auth-note" id="registration-note">
+          We will send an OTP to verify your email before creating your account.
+        </p>
+
+        <button className="storefront-auth-submit" type="submit" disabled={isSubmitting || isGooglePending} aria-busy={isSubmitting}>
+          {isSubmitting ? "Sending OTP..." : "Create Account"}
         </button>
 
-        <p className="form-footer">
-          Already registered? <Link to="/login">Login</Link>
+        <GoogleAuthButton disabled={isSubmitting} onPendingChange={setIsGooglePending} />
+
+        <p className="storefront-auth-footer">
+          Already have an account? <Link to="/login">Sign in</Link>
         </p>
       </form>
     </section>

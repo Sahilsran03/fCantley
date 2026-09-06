@@ -1,171 +1,39 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import AdminNav from "../components/AdminNav.jsx";
 import { useToast } from "../context/ToastContext.jsx";
 import api from "../services/api.js";
 
-const statuses = ["Pending", "Approved", "Rejected", "Completed"];
-const refundStatuses = ["NotRequired", "Pending", "Processed", "Failed"];
+const money = (value) => `Rs. ${Number(value || 0).toLocaleString("en-IN")}`;
+const newKey = () => globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
 const AdminReturnDetails = () => {
-  const { id } = useParams();
-  const { showToast } = useToast();
-  const [request, setRequest] = useState(null);
-  const [statusForm, setStatusForm] = useState({ status: "Pending", adminNote: "", refundAmount: "", refundStatus: "NotRequired" });
-  const [refundForm, setRefundForm] = useState({ refundStatus: "NotRequired", refundAmount: "", adminNote: "" });
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState("");
-
-  const loadRequest = () => {
-    api
-      .get(`/admin/returns/${id}`)
-      .then((response) => {
-        const data = response.data.request;
-        setRequest(data);
-        setStatusForm({
-          status: data.status,
-          adminNote: data.adminNote || "",
-          refundAmount: data.refundAmount || "",
-          refundStatus: data.refundStatus
-        });
-        setRefundForm({
-          refundStatus: data.refundStatus,
-          refundAmount: data.refundAmount || "",
-          adminNote: data.adminNote || ""
-        });
-        setError("");
-      })
-      .catch((requestError) => setError(requestError.response?.data?.message || "Unable to load request."));
-  };
-
-  useEffect(() => {
-    loadRequest();
-  }, [id]);
-
-  const updateStatus = async (event) => {
-    event.preventDefault();
-    setIsSaving(true);
-    try {
-      const response = await api.put(`/admin/returns/${id}/status`, statusForm);
-      setRequest(response.data.request);
-      showToast("Request status updated.");
-      setError("");
-    } catch (requestError) {
-      setError(requestError.response?.data?.message || "Unable to update request.");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const updateRefund = async (event) => {
-    event.preventDefault();
-    setIsSaving(true);
-    try {
-      const response = await api.put(`/admin/returns/${id}/refund-status`, refundForm);
-      setRequest(response.data.request);
-      showToast("Refund status updated.");
-      setError("");
-    } catch (requestError) {
-      setError(requestError.response?.data?.message || "Unable to update refund status.");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  if (!request && !error) {
-    return (
-      <section className="admin-page">
-        <AdminNav />
-        <div className="analytics-skeleton">Loading request...</div>
-      </section>
-    );
-  }
-
-  return (
-    <section className="admin-page">
-      <AdminNav />
-      {error ? <div className="form-alert">{error}</div> : null}
-      {request ? (
-        <>
-          <div className="page-heading row-heading">
-            <div>
-              <p className="eyebrow">Admin returns</p>
-              <h1>{request.type} Request</h1>
-              <p>{request.order?.orderNumber} - {request.order?.orderStatus}</p>
-            </div>
-            <Link className="button-link" to="/admin/returns">Back to returns</Link>
-          </div>
-
-          <div className="checkout-layout">
-            <div className="form-panel">
-              <h2>Request</h2>
-              <p><strong>Customer:</strong> {request.user?.name || "Customer"} ({request.user?.email || request.order?.shippingAddress?.email})</p>
-              <p><strong>Status:</strong> {request.status}</p>
-              <p><strong>Refund status:</strong> {request.refundStatus}</p>
-              <p><strong>Reason:</strong> {request.reason}</p>
-              <p><strong>Order total:</strong> Rs. {Number(request.order?.totalAmount || 0).toLocaleString("en-IN")}</p>
-              <p><strong>Payment:</strong> {request.order?.paymentMethod || "COD"} / {request.order?.paymentStatus || "Pending"}</p>
-              {request.proofImages?.length ? (
-                <div className="proof-grid">
-                  {request.proofImages.map((image) => (
-                    <a href={image.url} key={image.publicId} rel="noreferrer" target="_blank">
-                      <img alt={image.originalName || "Proof"} src={image.url} />
-                    </a>
-                  ))}
-                </div>
-              ) : <p>No proof images uploaded.</p>}
-            </div>
-
-            <aside className="cart-summary">
-              <form className="quote-admin-form" onSubmit={updateStatus}>
-                <h2>Approve or reject</h2>
-                <label>
-                  Status
-                  <select value={statusForm.status} onChange={(event) => setStatusForm((current) => ({ ...current, status: event.target.value }))}>
-                    {statuses.map((status) => <option key={status} value={status}>{status}</option>)}
-                  </select>
-                </label>
-                <label>
-                  Refund amount
-                  <input min="0" type="number" value={statusForm.refundAmount} onChange={(event) => setStatusForm((current) => ({ ...current, refundAmount: event.target.value }))} />
-                </label>
-                <label>
-                  Refund status
-                  <select value={statusForm.refundStatus} onChange={(event) => setStatusForm((current) => ({ ...current, refundStatus: event.target.value }))}>
-                    {refundStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
-                  </select>
-                </label>
-                <label>
-                  Admin note
-                  <textarea rows="4" value={statusForm.adminNote} onChange={(event) => setStatusForm((current) => ({ ...current, adminNote: event.target.value }))} />
-                </label>
-                <button className="primary-button" disabled={isSaving} type="submit">{isSaving ? "Saving..." : "Save decision"}</button>
-              </form>
-
-              <form className="quote-admin-form" onSubmit={updateRefund}>
-                <h2>Manual refund tracking</h2>
-                <label>
-                  Refund status
-                  <select value={refundForm.refundStatus} onChange={(event) => setRefundForm((current) => ({ ...current, refundStatus: event.target.value }))}>
-                    {refundStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
-                  </select>
-                </label>
-                <label>
-                  Refund amount
-                  <input min="0" type="number" value={refundForm.refundAmount} onChange={(event) => setRefundForm((current) => ({ ...current, refundAmount: event.target.value }))} />
-                </label>
-                <label>
-                  Admin note
-                  <textarea rows="3" value={refundForm.adminNote} onChange={(event) => setRefundForm((current) => ({ ...current, adminNote: event.target.value }))} />
-                </label>
-                <button className="secondary-button" disabled={isSaving} type="submit">Update refund</button>
-              </form>
-            </aside>
-          </div>
-        </>
-      ) : null}
-    </section>
-  );
+  const { id } = useParams(); const { showToast } = useToast();
+  const [request, setRequest] = useState(null); const [error, setError] = useState(""); const [saving, setSaving] = useState(false);
+  const [decision, setDecision] = useState({ approvedQuantity: 1, approvedRefundAmount: 0, adminNote: "" });
+  const [receipt, setReceipt] = useState({ receivedQuantity: 1, inspectionStatus: "SELLABLE", restockDecision: "DO_NOT_RESTOCK", restockedQuantity: 1, inspectionNote: "" });
+  const [refund, setRefund] = useState({ method: "MANUAL", amount: "", manualMethod: "UPI", manualReference: "", providerRefundId: "", notes: "", idempotencyKey: newKey() });
+  const load = useCallback(() => api.get(`/admin/returns/${id}`).then((r) => { const data = r.data.request; setRequest(data); setDecision({ approvedQuantity: data.requestedQuantity || 1, approvedRefundAmount: data.selectedItemSnapshot ? Number(data.selectedItemSnapshot.finalPrice || 0) * Number(data.requestedQuantity || 0) : 0, adminNote: data.adminNote || "" }); setError(""); }).catch((e) => setError(e.response?.data?.message || "Unable to load request.")), [id]);
+  useEffect(() => { load(); }, [load]);
+  const act = async (operation) => { setSaving(true); setError(""); try { await operation(); await load(); } catch (e) { setError(e.response?.data?.message || "Unable to update return."); } finally { setSaving(false); } };
+  const decide = (status) => act(async () => { await api.put(`/admin/returns/${id}/status`, { ...decision, status }); showToast(`Return ${status.toLowerCase()}.`); });
+  const receive = (event) => { event.preventDefault(); act(async () => { await api.post(`/admin/returns/${id}/receive`, receipt); showToast("Return received and inspected."); }); };
+  const recordRefund = (event) => { event.preventDefault(); act(async () => { await api.post(`/admin/returns/${id}/refunds`, refund, { headers: { "Idempotency-Key": refund.idempotencyKey } }); setRefund((v) => ({ ...v, amount: "", manualReference: "", providerRefundId: "", notes: "", idempotencyKey: newKey() })); showToast("Completed refund recorded."); }); };
+  if (!request) return <section className="admin-page"><AdminNav />{error ? <div className="form-alert">{error}</div> : <div className="analytics-skeleton">Loading request...</div>}</section>;
+  const order = request.order || {}; const item = request.selectedItemSnapshot; const received = Number(order.onlineAmountPaid || 0) + Number(order.codAmountCollected || 0);
+  return <section className="admin-page"><AdminNav />{error ? <div className="form-alert">{error}</div> : null}
+    <div className="page-heading row-heading"><div><p className="eyebrow">Admin returns</p><h1>{request.type} Request</h1><p>{order.orderNumber} - {request.status}</p></div><Link className="button-link" to="/admin/returns">Back</Link></div>
+    <div className="checkout-layout"><div className="form-panel">
+      <h2>Financial and item context</h2><p><strong>Order total:</strong> {money(order.totalAmount)}</p><p><strong>Online received:</strong> {money(order.onlineAmountPaid)}</p><p><strong>COD collected:</strong> {money(order.codAmountCollected)}</p><p><strong>Total received:</strong> {money(received)}</p>
+      {item ? <><p><strong>Item:</strong> {item.name} / {item.variantSku || item.size || "Standard"}</p><p><strong>Purchased / requested:</strong> {item.originalQuantity} / {request.requestedQuantity}</p><p><strong>Unit refundable value:</strong> {money(item.finalPrice)}</p></> : <p>Legacy request: no authoritative item snapshot.</p>}
+      <p><strong>Reason:</strong> {request.reasonCategory ? `${request.reasonCategory} — ` : ""}{request.reason}</p><p><strong>Approved:</strong> Qty {request.approvedQuantity ?? "—"}, {money(request.approvedRefundAmount)}</p><p><strong>Refunded / remaining:</strong> {money(request.completedRefundAmount)} / {money(request.remainingRefundAmount)}</p><p><strong>Inventory:</strong> {request.restockDecision || "Pending"}{request.restockedAt ? ` (${request.restockedQuantity} restocked)` : ""}</p>
+      <h2>Refund records</h2>{request.refundTransactions?.length ? request.refundTransactions.map((tx) => <div className="admin-row" key={tx._id}><span>{tx.method}</span><strong>{money(tx.amount)}</strong><span>{tx.providerRefundId || tx.manualReference || tx.manualMethod}</span><span>{new Date(tx.processedAt).toLocaleString()}</span></div>) : <p>No authoritative refunds recorded.</p>}
+    </div><aside className="cart-summary">
+      {request.type === "RETURN" && request.status === "Pending" ? <div className="quote-admin-form"><h2>Decision</h2><label>Approved quantity<input min="1" max={request.requestedQuantity} type="number" value={decision.approvedQuantity} onChange={(e) => setDecision((v) => ({ ...v, approvedQuantity: e.target.value }))} /></label><label>Approved refund amount<input min="0" max={Number(item?.finalPrice || 0) * Number(decision.approvedQuantity || 0)} type="number" value={decision.approvedRefundAmount} onChange={(e) => setDecision((v) => ({ ...v, approvedRefundAmount: e.target.value }))} /></label><label>Admin note<textarea value={decision.adminNote} onChange={(e) => setDecision((v) => ({ ...v, adminNote: e.target.value }))} /></label><button disabled={saving} className="primary-button" onClick={() => decide("Approved")}>Approve Return</button><button disabled={saving} className="secondary-button" onClick={() => decide("Rejected")}>Reject Return</button></div> : null}
+      {request.type === "CANCEL" && request.status === "Pending" ? <div className="quote-admin-form"><h2>Cancellation decision</h2><label>Admin note<textarea value={decision.adminNote} onChange={(e) => setDecision((v) => ({ ...v, adminNote: e.target.value }))} /></label><button disabled={saving} className="primary-button" onClick={() => decide("Approved")}>Approve Cancellation</button><button disabled={saving} className="secondary-button" onClick={() => decide("Rejected")}>Reject Cancellation</button></div> : null}
+      {request.type === "RETURN" && request.status === "Approved" ? <form className="quote-admin-form" onSubmit={receive}><h2>Receive and inspect</h2><label>Received quantity<input type="number" min="1" max={request.approvedQuantity} value={receipt.receivedQuantity} onChange={(e) => setReceipt((v) => ({ ...v, receivedQuantity: e.target.value }))} /></label><label>Condition<select value={receipt.inspectionStatus} onChange={(e) => setReceipt((v) => ({ ...v, inspectionStatus: e.target.value }))}><option value="SELLABLE">Sellable</option><option value="DAMAGED">Damaged</option><option value="OTHER">Other</option></select></label><label>Inventory decision<select value={receipt.restockDecision} onChange={(e) => setReceipt((v) => ({ ...v, restockDecision: e.target.value }))}><option value="DO_NOT_RESTOCK">Do not restock</option><option value="RESTOCK">Restock</option></select></label>{receipt.restockDecision === "RESTOCK" ? <label>Restock quantity<input type="number" min="1" max={receipt.receivedQuantity} value={receipt.restockedQuantity} onChange={(e) => setReceipt((v) => ({ ...v, restockedQuantity: e.target.value }))} /></label> : null}<label>Inspection note<textarea value={receipt.inspectionNote} onChange={(e) => setReceipt((v) => ({ ...v, inspectionNote: e.target.value }))} /></label><button disabled={saving} className="primary-button">Mark Return Received</button></form> : null}
+      {request.type === "RETURN" && request.status === "Received" && request.remainingRefundAmount > 0 ? <form className="quote-admin-form" onSubmit={recordRefund}><h2>Record completed refund</h2><label>Method<select value={refund.method} onChange={(e) => setRefund((v) => ({ ...v, method: e.target.value }))}><option value="MANUAL">Manual COD refund</option><option value="RAZORPAY">Razorpay Dashboard refund</option></select></label><label>Amount<input required min="1" max={request.remainingRefundAmount} type="number" value={refund.amount} onChange={(e) => setRefund((v) => ({ ...v, amount: e.target.value }))} /></label>{refund.method === "RAZORPAY" ? <label>Provider refund ID<input required value={refund.providerRefundId} onChange={(e) => setRefund((v) => ({ ...v, providerRefundId: e.target.value }))} /></label> : <><label>Manual method<select value={refund.manualMethod} onChange={(e) => setRefund((v) => ({ ...v, manualMethod: e.target.value }))}><option value="CASH">Cash</option><option value="UPI">UPI</option><option value="BANK_TRANSFER">Bank transfer</option><option value="OTHER">Other</option></select></label><label>Reference<input required={refund.manualMethod !== "CASH"} value={refund.manualReference} onChange={(e) => setRefund((v) => ({ ...v, manualReference: e.target.value }))} /></label></>}<label>Notes<textarea value={refund.notes} onChange={(e) => setRefund((v) => ({ ...v, notes: e.target.value }))} /></label><button disabled={saving} className="primary-button">Record Refund</button></form> : null}
+    </aside></div>
+  </section>;
 };
-
 export default AdminReturnDetails;

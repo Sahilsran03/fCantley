@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import Breadcrumbs from "../components/Breadcrumbs.jsx";
 import ProductCard from "../components/ProductCard.jsx";
@@ -6,6 +6,7 @@ import SEO from "../components/SEO.jsx";
 import { ProductGridSkeleton } from "../components/Skeleton.jsx";
 import api from "../services/api.js";
 import { breadcrumbSchema, truncate } from "../utils/seo.js";
+import "./Shop.css";
 
 const initialFilters = {
   category: "",
@@ -22,263 +23,437 @@ const initialFilters = {
   page: "1"
 };
 
+const supportedFilterKeys = Object.keys(initialFilters);
+const filterOnlyKeys = ["category", "productType", "material", "color", "minPrice", "maxPrice", "minRating", "inStock", "featured"];
+const sortOptions = ["featured", "trending", "best-selling", "most-viewed", "highest-rated", "most-reviewed", "latest", "price-asc", "price-desc"];
+
+const positiveInteger = (value) => {
+  const number = Number(value);
+  return Number.isInteger(number) && number > 0 ? String(number) : "1";
+};
+
+const nonNegativeNumber = (value) => {
+  const normalized = String(value ?? "").trim();
+  if (!normalized) return "";
+  const number = Number(normalized);
+  return Number.isFinite(number) && number >= 0 ? String(number) : "";
+};
+
+const filtersFromSearchParams = (params) => {
+  const next = { ...initialFilters };
+  next.q = params.get("q") || "";
+  next.category = params.get("category") || "";
+  next.productType = params.get("productType") || "";
+  next.material = params.get("material") || "";
+  next.color = params.get("color") || "";
+  next.minPrice = nonNegativeNumber(params.get("minPrice"));
+  next.maxPrice = nonNegativeNumber(params.get("maxPrice"));
+  next.minRating = ["3", "4"].includes(params.get("minRating")) ? params.get("minRating") : "";
+  next.inStock = params.get("inStock") === "true" ? "true" : "";
+  next.featured = params.get("featured") === "true" ? "true" : "";
+  next.sort = sortOptions.includes(params.get("sort")) ? params.get("sort") : "featured";
+  next.page = positiveInteger(params.get("page"));
+  return next;
+};
+
+const ProductTypeLabels = {
+  tshirt: "T-shirt",
+  "oversized-tshirt": "Oversized T-shirt",
+  hoodie: "Hoodie",
+  sticker: "Sticker",
+  label: "Label",
+  other: "Other",
+  clothing: "Other clothing"
+};
+
 const Shop = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const searchKey = searchParams.toString();
+  const filters = useMemo(() => filtersFromSearchParams(searchParams), [searchKey]);
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [meta, setMeta] = useState({ total: 0, page: 1, totalPages: 1 });
-  const [filters, setFilters] = useState(() => ({
-    ...initialFilters,
-    ...Object.fromEntries(searchParams.entries())
-  }));
-  const [suggestions, setSuggestions] = useState([]);
-  const [suggestedProducts, setSuggestedProducts] = useState([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [draftFilters, setDraftFilters] = useState(initialFilters);
+  const filterButtonRef = useRef(null);
+  const drawerRef = useRef(null);
+  const requestIdRef = useRef(0);
+  const resultsRef = useRef(null);
+  const [retryNonce, setRetryNonce] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const selectedCategory = categories.find((category) => category.slug === filters.category);
   const query = useMemo(() => {
     const params = new URLSearchParams();
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value && !(key === "page" && value === "1")) params.set(key, value);
+    supportedFilterKeys.forEach((key) => {
+      const value = filters[key];
+      if (value && !(key === "page" && value === "1") && !(key === "sort" && value === "featured")) {
+        params.set(key, value);
+      }
     });
     return params.toString();
   }, [filters]);
 
+  const requestQuery = useMemo(() => {
+    const params = new URLSearchParams(query);
+    if (!params.has("sort")) params.set("sort", filters.sort);
+    return params.toString();
+  }, [filters.sort, query]);
+
+  const updateUrlFilters = (updater) => {
+    const nextFilters = updater(filters);
+    const nextParams = new URLSearchParams(searchParams);
+
+    supportedFilterKeys.forEach((key) => nextParams.delete(key));
+    supportedFilterKeys.forEach((key) => {
+      const value = nextFilters[key];
+      if (value && !(key === "page" && value === "1") && !(key === "sort" && value === "featured")) {
+        nextParams.set(key, value);
+      }
+    });
+
+    setSearchParams(nextParams);
+  };
+
   useEffect(() => {
-    api.get("/categories").then((response) => setCategories(response.data.categories || []));
+    api.get("/categories").then((response) => setCategories(response.data.categories || [])).catch(() => setCategories([]));
   }, []);
 
   useEffect(() => {
-    setSearchParams(query, { replace: true });
+    const requestId = ++requestIdRef.current;
     const controller = new AbortController();
     setLoading(true);
+    setError("");
+    setProducts([]);
 
     api
-      .get(`/products?limit=12${query ? `&${query}` : ""}`, { signal: controller.signal })
+      .get(`/products?limit=12${requestQuery ? `&${requestQuery}` : ""}`, { signal: controller.signal })
       .then((response) => {
-        setProducts(response.data.products || []);
+        if (requestId !== requestIdRef.current) return;
+
+        const responseProducts = response.data.products || [];
+        setProducts(responseProducts);
         setMeta({
           total: response.data.total || 0,
           page: response.data.page || 1,
           totalPages: response.data.totalPages || response.data.pages || 1
         });
-        setError("");
-        if (!(response.data.products || []).length) {
-          api
-            .get("/products", { params: { limit: 4, sort: "trending", featured: "true" } })
-            .then((suggestionResponse) => setSuggestedProducts(suggestionResponse.data.products || []))
-            .catch(() => setSuggestedProducts([]));
-        } else {
-          setSuggestedProducts([]);
-        }
+
       })
       .catch((requestError) => {
-        if (requestError.name !== "CanceledError") {
+        if (requestId === requestIdRef.current && requestError.name !== "CanceledError") {
+          setProducts([]);
           setError(requestError.response?.data?.message || "Unable to load products.");
         }
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (requestId === requestIdRef.current) setLoading(false);
+      });
 
     return () => controller.abort();
-  }, [query, setSearchParams]);
+  }, [requestQuery, retryNonce]);
 
   useEffect(() => {
-    if (!filters.q || filters.q.length < 2) {
-      setSuggestions([]);
-      return;
-    }
+    if (loading || error || Number(filters.page) <= Number(meta.totalPages || 1)) return;
+    updateUrlFilters((current) => ({ ...current, page: String(Math.max(1, Number(meta.totalPages) || 1)) }));
+  }, [error, filters.page, loading, meta.totalPages]);
 
-    const timer = window.setTimeout(() => {
-      api
-        .get(`/products?q=${encodeURIComponent(filters.q)}&limit=5`)
-        .then((response) => setSuggestions(response.data.products || []))
-        .catch(() => setSuggestions([]));
-    }, 220);
-
-    return () => window.clearTimeout(timer);
-  }, [filters.q]);
-
-  const updateFilter = (event) => {
-    setFilters((current) => ({ ...current, [event.target.name]: event.target.value, page: "1" }));
-  };
-
-  const updateCheckboxFilter = (event) => {
-    setFilters((current) => ({ ...current, [event.target.name]: event.target.checked ? "true" : "", page: "1" }));
-  };
+  const clearFilterFields = (current) => ({
+    ...current,
+    category: "",
+    productType: "",
+    material: "",
+    color: "",
+    minPrice: "",
+    maxPrice: "",
+    minRating: "",
+    inStock: "",
+    featured: "",
+    page: "1"
+  });
 
   const setPage = (page) => {
-    setFilters((current) => ({ ...current, page: String(page) }));
+    updateUrlFilters((current) => ({ ...current, page: positiveInteger(page) }));
+    window.requestAnimationFrame(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
   };
 
-  const resetFilters = () => setFilters(initialFilters);
-  const title = selectedCategory ? `${selectedCategory.name} Collection` : filters.q ? `Search results for ${filters.q}` : "Shop Cantley";
-  const description = truncate(selectedCategory?.description || "Browse Cantley custom apparel, stickers, labels, featured products, and top-rated products.");
-  const activeFilterCount = Object.entries(filters).filter(([key, value]) => value && !["page", "sort"].includes(key)).length;
+  const updateSort = (event) => {
+    updateUrlFilters((current) => ({ ...current, sort: event.target.value, page: "1" }));
+  };
 
-  const filterControls = (
-    <div className="discovery-filter-panel">
-      <div className="filter-panel-heading">
-        <strong>Filters</strong>
-        <button className="text-link" type="button" onClick={resetFilters}>Clear all</button>
-      </div>
-      <label>
-        Category
-        <select name="category" value={filters.category} onChange={updateFilter} aria-label="Category">
-          <option value="">All categories</option>
-          {categories.map((category) => (
-            <option key={category._id} value={category.slug}>
-              {category.name}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label>
-        Product type
-        <select name="productType" value={filters.productType} onChange={updateFilter} aria-label="Product type">
-          <option value="">All types</option>
-          <option value="tshirt">T-shirt</option>
-          <option value="oversized-tshirt">Oversized T-shirt</option>
-          <option value="hoodie">Hoodie</option>
-          <option value="sticker">Sticker</option>
-          <option value="label">Label</option>
-          <option value="other">Other</option>
-          <option value="clothing">Other clothing</option>
-        </select>
-      </label>
-      <label>
-        Material
-        <input name="material" value={filters.material} onChange={updateFilter} placeholder="Cotton, vinyl, paper" />
-      </label>
-      <label>
-        Color
-        <input name="color" value={filters.color} onChange={updateFilter} placeholder="Black, white, red" />
-      </label>
-      <div className="price-filter-row">
-        <label>
-          Min price
-          <input name="minPrice" type="number" min="0" value={filters.minPrice} onChange={updateFilter} placeholder="0" />
-        </label>
-        <label>
-          Max price
-          <input name="maxPrice" type="number" min="0" value={filters.maxPrice} onChange={updateFilter} placeholder="5000" />
-        </label>
-      </div>
-      <label>
-        Minimum rating
-        <select name="minRating" value={filters.minRating} onChange={updateFilter}>
-          <option value="">Any rating</option>
-          <option value="4">4 stars & up</option>
-          <option value="3">3 stars & up</option>
-        </select>
-      </label>
-      <label className="inline-check">
-        <input name="inStock" type="checkbox" checked={filters.inStock === "true"} onChange={updateCheckboxFilter} />
-        In stock only
-      </label>
-      <label className="inline-check">
-        <input name="featured" type="checkbox" checked={filters.featured === "true"} onChange={updateCheckboxFilter} />
-        Featured only
-      </label>
-    </div>
-  );
+  const resetFilters = () => {
+    updateUrlFilters((current) => clearFilterFields(current));
+  };
+
+  const openFilterDrawer = () => {
+    setDraftFilters({ ...filters });
+    setIsFilterOpen(true);
+  };
+
+  const closeFilterDrawer = () => {
+    setIsFilterOpen(false);
+    window.setTimeout(() => filterButtonRef.current?.focus(), 0);
+  };
+
+  const updateDraftFilter = (event) => {
+    const value = event.target.type === "checkbox" ? (event.target.checked ? "true" : "") : event.target.value;
+    setDraftFilters((current) => ({ ...current, [event.target.name]: value }));
+  };
+
+
+  const clearDrawerFilters = () => {
+    updateUrlFilters((current) => clearFilterFields(current));
+    closeFilterDrawer();
+  };
+
+  const applyDraftFilters = () => {
+    const minPrice = nonNegativeNumber(draftFilters.minPrice);
+    const maxPrice = nonNegativeNumber(draftFilters.maxPrice);
+    const normalizedDraft = {
+      ...draftFilters,
+      material: draftFilters.material.trim(),
+      color: draftFilters.color.trim(),
+      minPrice,
+      maxPrice
+    };
+    if (minPrice && maxPrice && Number(minPrice) > Number(maxPrice)) {
+      normalizedDraft.minPrice = maxPrice;
+      normalizedDraft.maxPrice = minPrice;
+    }
+    updateUrlFilters((current) => ({
+      ...current,
+      ...Object.fromEntries(filterOnlyKeys.map((key) => [key, normalizedDraft[key]])),
+      page: "1"
+    }));
+    closeFilterDrawer();
+  };
+
+  const removeFilter = (key) => {
+    updateUrlFilters((current) => ({
+      ...current,
+      [key]: "",
+      page: "1"
+    }));
+  };
+
+  const clearActiveFilters = () => {
+    updateUrlFilters((current) => clearFilterFields(current));
+  };
+
+  const clearSearch = () => {
+    updateUrlFilters((current) => ({ ...current, q: "", page: "1" }));
+  };
+
+  useEffect(() => {
+    if (!isFilterOpen) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        closeFilterDrawer();
+        return;
+      }
+      if (event.key !== "Tab") return;
+
+      const focusable = drawerRef.current?.querySelectorAll(
+        'button:not([disabled]), input:not([disabled]), select:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
+      );
+      if (!focusable?.length) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    const frame = window.requestAnimationFrame(() => drawerRef.current?.querySelector("[data-filter-drawer-focus]")?.focus());
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
+      window.cancelAnimationFrame(frame);
+    };
+  }, [isFilterOpen]);
+
+  const activeFilters = filterOnlyKeys.filter((key) => filters[key]);
+  const activeFilterCount = activeFilters.length;
+  const activeFilterLabel = (key) => {
+    if (key === "category") return categories.find((category) => category.slug === filters.category)?.name || filters.category;
+    if (key === "productType") return ProductTypeLabels[filters.productType] || filters.productType;
+    if (key === "minPrice" || key === "maxPrice") {
+      if (filters.minPrice && filters.maxPrice) return `Rs. ${filters.minPrice}-Rs. ${filters.maxPrice}`;
+      return filters.minPrice ? `From Rs. ${filters.minPrice}` : `Up to Rs. ${filters.maxPrice}`;
+    }
+    if (key === "minRating") return `${filters.minRating} stars & up`;
+    if (key === "inStock") return "In stock";
+    if (key === "featured") return "Featured";
+    return filters[key];
+  };
+  const activeChipKeys = activeFilters.filter((key) => !(key === "maxPrice" && filters.minPrice));
+  const title = selectedCategory ? `${selectedCategory.name} Collection` : filters.q ? `Search results for ${filters.q}` : "Shop Cantley";
+  const hasActiveDiscovery = Boolean(filters.q || activeFilterCount || filters.sort !== "featured");
+  const description = truncate(selectedCategory?.description || "Browse Cantley custom apparel, stickers, labels, featured products, and top-rated products.");
 
   return (
-    <section className="catalog-page">
+    <section className="catalog-page shop-page">
       <SEO
         title={title}
         description={description}
         canonical={`/shop${query ? `?${query}` : ""}`}
         schema={[breadcrumbSchema([{ name: "Home", url: "/" }, { name: "Shop", url: "/shop" }])]}
       />
-      <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Shop" }]} />
-
-      <div className="page-heading">
-        <p className="eyebrow">Shop</p>
-        <h1>{filters.q ? `Showing results for "${filters.q}"` : selectedCategory?.name || "Products"}</h1>
-        <p>{description}</p>
-      </div>
-
-      <div className="search-panel">
-        <label>
-          Search products and categories
-          <input name="q" value={filters.q} onChange={updateFilter} placeholder="Search Cantley products" autoComplete="off" />
-        </label>
-        {suggestions.length ? (
-          <div className="search-suggestions">
-            {suggestions.map((product) => (
-              <button key={product._id} type="button" onClick={() => setFilters((current) => ({ ...current, q: product.name, page: "1" }))}>
-                {product.name}
-                <span>{product.category?.name || product.productType}</span>
-              </button>
-            ))}
+      <header className="shop-collection-header">
+        <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Shop" }]} />
+        <div className="shop-collection-heading">
+          <div>
+            <p className="eyebrow">Collection</p>
+            <h1>{filters.q ? `Search results for "${filters.q}"` : selectedCategory?.name || "Shop all"}</h1>
           </div>
-        ) : null}
-      </div>
+          <p className="shop-result-count" aria-live="polite">
+            {loading ? "Loading products..." : `${meta.total} ${meta.total === 1 ? "product" : "products"}`}
+          </p>
+        </div>
+        {filters.q ? <button className="text-link shop-clear-search" type="button" onClick={clearSearch}>Clear search</button> : null}
+        {selectedCategory?.description ? <p className="shop-collection-description">{selectedCategory.description}</p> : null}
+      </header>
 
       <div className="discovery-toolbar">
-        <button className="secondary-button filter-drawer-button" type="button" onClick={() => setIsFilterOpen(true)}>
+        <button ref={filterButtonRef} className="secondary-button filter-drawer-button" type="button" onClick={openFilterDrawer} aria-haspopup="dialog" aria-expanded={isFilterOpen}>
           Filters {activeFilterCount ? `(${activeFilterCount})` : ""}
         </button>
-        <select name="sort" value={filters.sort} onChange={updateFilter} aria-label="Sort products">
-          <option value="featured">Featured</option>
-          <option value="trending">Trending</option>
-          <option value="best-selling">Best selling</option>
-          <option value="most-viewed">Most viewed</option>
-          <option value="highest-rated">Highest rated</option>
-          <option value="most-reviewed">Most reviewed</option>
-          <option value="latest">Latest</option>
-          <option value="price-asc">Price: low to high</option>
-          <option value="price-desc">Price: high to low</option>
-        </select>
-        <button className="secondary-button" type="button" onClick={resetFilters}>Reset</button>
+        <label className="shop-sort-control">
+          <span>Sort by</span>
+          <select name="sort" value={filters.sort} onChange={updateSort} aria-label="Sort products">
+            {sortOptions.map((option) => <option key={option} value={option}>{ProductTypeLabels[option] || option.replaceAll("-", " ").replace(/\b\w/g, (letter) => letter.toUpperCase())}</option>)}
+          </select>
+        </label>
       </div>
 
-      {error ? <div className="form-alert">{error}</div> : null}
-      <div className="discovery-layout">
-        <aside className="desktop-filters">{filterControls}</aside>
-        <div className={`filter-drawer ${isFilterOpen ? "open" : ""}`}>
-          <button className="filter-drawer-backdrop" type="button" aria-label="Close filters" onClick={() => setIsFilterOpen(false)} />
-          <div className="filter-drawer-panel">
-            <button className="secondary-button" type="button" onClick={() => setIsFilterOpen(false)}>Close filters</button>
-            {filterControls}
-          </div>
+      {activeChipKeys.length ? (
+        <div className="active-filter-chips" aria-label="Active filters">
+          {activeChipKeys.map((key) => (
+            <span className="active-filter-chip" key={key}>
+              {activeFilterLabel(key)}
+              <button type="button" onClick={() => removeFilter(key)} aria-label={`Remove ${activeFilterLabel(key)} filter`}>Remove</button>
+            </span>
+          ))}
+          {activeChipKeys.length > 1 ? <button className="clear-active-filters" type="button" onClick={clearActiveFilters}>Clear all</button> : null}
         </div>
-        <div className="discovery-results">
-          {loading ? <ProductGridSkeleton /> : (
-            <>
-              <div className="collection-meta">{meta.total} products found</div>
-              <div className="product-grid">
-                {products.map((product) => (
-                  <ProductCard key={product._id} product={product} />
-                ))}
+      ) : null}
+
+      {isFilterOpen ? (
+        <div className="shop-filter-drawer" role="presentation">
+          <button className="shop-filter-drawer-backdrop" type="button" aria-label="Close filters" onClick={closeFilterDrawer} />
+          <aside ref={drawerRef} className="shop-filter-drawer-panel" role="dialog" aria-modal="true" aria-labelledby="shop-filter-drawer-title">
+            <header className="shop-filter-drawer-header">
+              <h2 id="shop-filter-drawer-title">Filters</h2>
+              <button data-filter-drawer-focus className="shop-filter-close" type="button" onClick={closeFilterDrawer} aria-label="Close filters">Close</button>
+            </header>
+            <div className="shop-filter-drawer-body">
+              <label>
+                Category
+                <select name="category" value={draftFilters.category} onChange={updateDraftFilter}>
+                  <option value="">All categories</option>
+                  {categories.map((category) => <option key={category._id} value={category.slug}>{category.name}</option>)}
+                </select>
+              </label>
+              <label>
+                Product type
+                <select name="productType" value={draftFilters.productType} onChange={updateDraftFilter}>
+                  <option value="">All types</option>
+                  {Object.entries(ProductTypeLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                </select>
+              </label>
+              <label>
+                Material
+                <input name="material" value={draftFilters.material} onChange={updateDraftFilter} placeholder="Cotton, vinyl, paper" />
+              </label>
+              <label>
+                Color
+                <input name="color" value={draftFilters.color} onChange={updateDraftFilter} placeholder="Black, white, red" />
+              </label>
+              <div className="shop-price-fields">
+                <label>
+                  Min price
+                  <input name="minPrice" type="number" min="0" value={draftFilters.minPrice} onChange={updateDraftFilter} placeholder="0" />
+                </label>
+                <label>
+                  Max price
+                  <input name="maxPrice" type="number" min="0" value={draftFilters.maxPrice} onChange={updateDraftFilter} placeholder="5000" />
+                </label>
               </div>
-              {!products.length && !error ? (
-                <div className="empty-state">
-                  <h2>No active products found</h2>
-                  <p>Try another Cantley category, material, color, price range, or search term.</p>
-                  <button className="secondary-button" type="button" onClick={resetFilters}>Reset filters</button>
-                </div>
-              ) : null}
-              {!products.length && suggestedProducts.length ? (
-                <section className="catalog-section">
-                  <div className="row-heading">
-                    <div>
-                      <p className="eyebrow">Suggested</p>
-                      <h2>Popular Cantley picks</h2>
-                    </div>
-                  </div>
-                  <div className="product-grid">
-                    {suggestedProducts.map((product) => <ProductCard key={product._id} product={product} />)}
-                  </div>
+              <label>
+                Minimum rating
+                <select name="minRating" value={draftFilters.minRating} onChange={updateDraftFilter}>
+                  <option value="">Any rating</option>
+                  <option value="4">4 stars & up</option>
+                  <option value="3">3 stars & up</option>
+                </select>
+              </label>
+              <fieldset>
+                <legend>Availability</legend>
+                <label className="shop-filter-check">
+                  <input name="inStock" type="checkbox" checked={draftFilters.inStock === "true"} onChange={updateDraftFilter} />
+                  In stock only
+                </label>
+              </fieldset>
+              <fieldset>
+                <legend>Featured</legend>
+                <label className="shop-filter-check">
+                  <input name="featured" type="checkbox" checked={draftFilters.featured === "true"} onChange={updateDraftFilter} />
+                  Featured products only
+                </label>
+              </fieldset>
+            </div>
+            <footer className="shop-filter-drawer-footer">
+              <button className="shop-filter-clear" type="button" onClick={clearDrawerFilters}>Clear all</button>
+              <button className="shop-filter-apply" type="button" onClick={applyDraftFilters}>Apply filters</button>
+            </footer>
+          </aside>
+        </div>
+      ) : null}
+
+            <div className="discovery-layout">
+        <div className="discovery-results" ref={resultsRef}>
+          {loading ? (
+            <div className="shop-loading-state" role="status" aria-live="polite">
+              <span className="visually-hidden">Loading products</span>
+              <ProductGridSkeleton count={12} />
+            </div>
+          ) : error ? (
+            <section className="shop-feedback-state shop-error-state" role="alert">
+              <h2>Products could not be loaded</h2>
+              <p>{error}</p>
+              <button className="secondary-button" type="button" onClick={() => setRetryNonce((value) => value + 1)}>Retry</button>
+            </section>
+          ) : (
+            <>
+              <div className="product-grid">
+                {products.map((product) => <ProductCard key={product._id} product={product} />)}
+              </div>
+              {!products.length ? (
+                <section className="shop-feedback-state shop-empty-state">
+                  <h2>{hasActiveDiscovery ? "No matching products" : "The catalog is being prepared"}</h2>
+                  <p>{hasActiveDiscovery ? "Try changing your search, filters, or sort option." : "There are no products to show right now. Please check back soon."}</p>
+                  {hasActiveDiscovery ? <button className="secondary-button" type="button" onClick={resetFilters}>Clear filters</button> : null}
                 </section>
               ) : null}
-              {products.length ? <div className="pagination">
-                <button className="secondary-button" type="button" disabled={meta.page <= 1} onClick={() => setPage(meta.page - 1)}>Previous</button>
-                <span>Page {meta.page} of {meta.totalPages}</span>
-                <button className="secondary-button" type="button" disabled={meta.page >= meta.totalPages} onClick={() => setPage(meta.page + 1)}>Next</button>
-              </div> : null}
+              {products.length ? (
+                <div className="pagination">
+                  <button className="secondary-button" type="button" disabled={meta.page <= 1} onClick={() => setPage(meta.page - 1)} aria-label="Previous products page">Previous</button>
+                  <span aria-current="page">Page {meta.page} of {meta.totalPages}</span>
+                  <button className="secondary-button" type="button" disabled={meta.page >= meta.totalPages} onClick={() => setPage(meta.page + 1)} aria-label="Next products page">Next</button>
+                </div>
+              ) : null}
             </>
           )}
         </div>

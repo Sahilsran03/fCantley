@@ -1,0 +1,60 @@
+.cantley-order { width: min(100%, 1200px); margin: 0 auto; padding: 24px clamp(16px, 3vw, 32px) 64px; color: #171714; }
+.cantley-order *, .cantley-order *::before, .cantley-order *::after { box-sizing: border-box; }
+.cantley-order-heading { padding: 8px 0 28px; margin-bottom: 28px; border-bottom: 1px solid #deded7; }
+.cantley-order .cantley-order-eyebrow { margin: 0 0 10px; color: #6b6b67; font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; }
+.cantley-order h1 { margin: 0; font-size: clamp(2rem, 4vw, 3.75rem); font-weight: 500; line-height: 1.08; letter-spacing: -.045em; }
+.cantley-order-meta { display: flex; flex-wrap: wrap; gap: 20px 48px; margin-top: 28px; }
+.cantley-order-meta > div { display: grid; align-content: start; gap: 6px; min-width: 0; }
+.cantley-order-meta span, .cantley-order-item-price span { color: #6b6b67; font-size: .75rem; }
+.cantley-order-meta strong { font-size: .88rem; font-weight: 500; }
+.cantley-order-status { width: fit-content; background: #eeeee7; padding: 4px 10px; }
+.cantley-order-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 350px); gap: 28px; align-items: start; }
+.cantley-order-main, .cantley-order-sidebar { display: grid; gap: 24px; min-width: 0; }
+.cantley-order-panel { min-width: 0; padding: 24px; background: #fff; border: 1px solid #deded7; }
+.cantley-order-panel > h2 { margin: 0 0 22px; font-size: 1.05rem; font-weight: 500; letter-spacing: -.02em; }
+.cantley-order-item { display: grid; grid-template-columns: 84px minmax(0, 1fr) minmax(0, auto); gap: 18px; align-items: start; padding: 22px 0; border-top: 1px solid #eaeae4; }
+.cantley-order-item:last-child { padding-bottom: 0; }
+.cantley-order-image { position: relative; display: grid; place-items: center; width: 84px; height: 108px; background: #f3f2ed; color: #77776e; font: 1.8rem Georgia, serif; }
+.cantley-order-image img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.cantley-order-item h3 { margin: 0 0 10px; font-size: .95rem; font-weight: 500; line-height: 1.5; }
+.cantley-order-options { display: grid; gap: 4px; margin: 0; font-size: .78rem; }
+.cantley-order-options > div { display: flex; flex-wrap: wrap; gap: 6px; }
+.cantley-order dt { color: #6b6b67; }
+.cantley-order dd { margin: 0; }
+.cantley-order-item-price { display: grid; gap: 6px; text-align: right; }
+.cantley-order-item-price strong { font-size: .9rem; font-weight: 500; }
+.cantley-order-address { font-size: .88rem; font-style: normal; line-height: 1.7; }
+.cantley-order-address strong { font-weight: 500; }
+.cantley-order-address p { margin: 4px 0 0; }
+.cantley-order-facts { display: grid; gap: 16px; margin: 0; font-size: .85rem; }
+.cantley-order-facts > div { display: grid; gap: 5px; }
+.cantley-order-facts dt { font-size: .75rem; }
+.cantley-order-summary { background: #f8f7f3; }
+.cantley-order-totals { display: grid; gap: 14px; margin: 0; font-size: .88rem; }
+.cantley-order-totals > div { display: flex; justify-content: space-between; gap: 16px; }
+.cantley-order-totals dd { text-align: right; }
+.cantley-order-totals .cantley-order-grand-total { margin-top: 6px; padding-top: 18px; border-top: 1px solid #deded7; font-size: 1.15rem; font-weight: 500; }
+.cantley-order-grand-total dt { color: #171714; }
+.cantley-order-note, .cantley-order-offers, .cantley-order-muted { color: #6b6b67; font-size: .8rem; line-height: 1.65; }
+.cantley-order-offers { padding-left: 18px; }
+.cantley-order-payment { margin-top: 24px; padding-top: 22px; border-top: 1px solid #deded7; }
+.cantley-order .info-panel { min-width: 0; margin-top: 22px; padding: 18px 0 0; border: 0; border-top: 1px solid #deded7; border-radius: 0; background: transparent; }
+.cantley-order .info-panel h3 { margin: 0 0 12px; font-size: .95rem; font-weight: 500; }
+.cantley-order .info-panel p { color: #5c5c56; font-size: .8rem; line-height: 1.65; }
+.cantley-order .cantley-order-button, .cantley-order .primary-button, .cantley-order .secondary-button { display: inline-flex; justify-content: center; align-items: center; max-width: 100%; min-height: 44px; padding: 12px 18px; border: 1px solid #171714; border-radius: 0; background: #171714; color: #fff; font: inherit; font-size: .8rem; text-align: center; white-space: normal; cursor: pointer; }
+.cantley-order .cantley-order-button-secondary, .cantley-order .secondary-button { background: transparent; color: #171714; }
+.cantley-order button:hover:not(:disabled), .cantley-order-button:hover { background: #393932; color: #fff; }
+.cantley-order button:disabled { opacity: .6; cursor: wait; }
+.cantley-order a:focus-visible, .cantley-order button:focus-visible { outline: 2px solid #706346; outline-offset: 4px; }
+.cantley-order-actions .cantley-order-button { width: 100%; }
+.cantley-order :is(h1, h2, h3, p, strong, dt, dd, li, button, a) { overflow-wrap: anywhere; }
+.cantley-order-item > *, .cantley-order-totals > div > * { min-width: 0; }
+.cantley-order-state { display: grid; justify-items: center; gap: 16px; padding: 64px 20px; background: #f6f5f0; text-align: center; }
+.cantley-order-state h1 { font-size: clamp(1.5rem, 4vw, 2.4rem); }
+.cantley-order-state p { margin: 0; color: #6b6b67; }
+.cantley-order-loader { width: 32px; height: 32px; border: 2px solid #deded7; border-top-color: #171714; border-radius: 50%; animation: cantley-order-spin 1s linear infinite; }
+@keyframes cantley-order-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .cantley-order-loader { animation: none; } }
+@media (max-width: 1050px) { .cantley-order-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 310px); gap: 20px; } .cantley-order-item { grid-template-columns: 76px minmax(0, 1fr); gap: 14px; } .cantley-order-image { width: 76px; height: 98px; grid-row: span 2; } .cantley-order-item-price { grid-column: 2; text-align: left; } }
+@media (max-width: 800px) { .cantley-order-layout { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 480px) { .cantley-order { padding-top: 16px; } .cantley-order-heading { margin-bottom: 20px; padding-bottom: 24px; } .cantley-order-meta { gap: 18px 24px; } .cantley-order-panel { padding: 18px; } .cantley-order-main, .cantley-order-sidebar { gap: 20px; } .cantley-order-state { padding: 40px 16px; } }

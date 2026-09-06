@@ -1,7 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Breadcrumbs from "../components/Breadcrumbs.jsx";
-import ProductGallery from "../components/ProductGallery.jsx";
 import ProductCard from "../components/ProductCard.jsx";
 import SEO from "../components/SEO.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
@@ -11,6 +10,7 @@ import { useWishlist } from "../context/WishlistContext.jsx";
 import api from "../services/api.js";
 import { getMediaUrl, getOptimizedImageUrl } from "../utils/media.js";
 import { breadcrumbSchema, productSchema, productUrl, truncate } from "../utils/seo.js";
+import "./ProductDetails.css";
 
 const unique = (items) => [...new Set(items.filter(Boolean))];
 const getVariantLabel = (variant, product) => {
@@ -45,21 +45,35 @@ const ProductDetails = () => {
   const [quantity, setQuantity] = useState(1);
   const [reviewForm, setReviewForm] = useState({ rating: 5, reviewText: "", orderId: "" });
   const [error, setError] = useState("");
+  const [productLoadError, setProductLoadError] = useState("");
+  const [isProductLoading, setIsProductLoading] = useState(true);
+  const [isProductNotFound, setIsProductNotFound] = useState(false);
   const [reviewError, setReviewError] = useState("");
   const [isAdding, setIsAdding] = useState(false);
   const [isReviewing, setIsReviewing] = useState(false);
+  const [isWishlistUpdating, setIsWishlistUpdating] = useState(false);
+  const [wishlistError, setWishlistError] = useState("");
+  const [selectedGalleryIndex, setSelectedGalleryIndex] = useState(0);
+  const [failedGalleryImages, setFailedGalleryImages] = useState(() => new Set());
+  const [failedGalleryVideos, setFailedGalleryVideos] = useState(() => new Set());
+  const addToCartLockRef = useRef(false);
 
   useEffect(() => {
+    setIsProductLoading(true);
+    setProductLoadError("");
+    setIsProductNotFound(false);
     api
       .get(`/products/${slug}`)
       .then((response) => {
         setProduct(response.data.product);
         setRelatedProducts(response.data.relatedProducts || []);
-        setError("");
       })
       .catch((requestError) => {
-        setError(requestError.response?.data?.message || "Unable to load product.");
-      });
+        setProduct(null);
+        if (requestError.response?.status === 404) setIsProductNotFound(true);
+        else setProductLoadError(requestError.response?.data?.message || "Unable to load product.");
+      })
+      .finally(() => setIsProductLoading(false));
   }, [slug]);
 
   useEffect(() => {
@@ -77,16 +91,26 @@ const ProductDetails = () => {
       });
 
     if (isAuthenticated) {
-      api
-        .get("/orders/my-orders")
-        .then((response) => {
-          const eligibleOrders = (response.data.orders || []).filter((order) =>
+      Promise.all([api.get("/orders/my-orders"), api.get("/reviews/my-reviews")])
+        .then(([ordersResponse, reviewsResponse]) => {
+          const alreadyReviewed = new Set(
+            (reviewsResponse.data.reviews || [])
+              .filter((review) => (review.product?._id || review.product) === product._id)
+              .map((review) => String(review.order))
+          );
+          const eligibleOrders = (ordersResponse.data.orders || []).filter((order) =>
+            order.orderStatus === "Delivered" &&
+            order.paymentStatus === "Paid" &&
+            Number(order.remainingCodDue || 0) === 0 &&
+            !alreadyReviewed.has(String(order._id)) &&
             order.items.some((item) => item.product === product._id || item.product?._id === product._id)
           );
           setMyOrders(eligibleOrders);
           setReviewForm((current) => ({ ...current, orderId: eligibleOrders[0]?._id || "" }));
         })
-        .catch(() => setMyOrders([]));
+        .catch(() => {
+          setMyOrders([]);
+        });
     }
     if (!relatedProducts.length && product.category?.slug) {
       api.get("/products", { params: { category: product.category.slug, limit: 4 } }).then((response) => {
@@ -111,10 +135,45 @@ const ProductDetails = () => {
       finishes: unique(variants.map((variant) => variant.finish))
     };
   }, [product]);
+  const galleryFallback = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 900 1125'%3E%3Crect width='900' height='1125' fill='%23f1f1ed'/%3E%3Ctext x='450' y='562.5' text-anchor='middle' dominant-baseline='middle' fill='%23334155' font-family='Arial,sans-serif' font-size='48'%3ECantley%3C/text%3E%3C/svg%3E";
+  const galleryImages = useMemo(() => {
+    const uniqueImages = new Set();
+    return (product?.images || []).reduce((images, image) => {
+      const source = getOptimizedImageUrl(image, { width: 1400 });
+      if (source && !uniqueImages.has(source)) {
+        uniqueImages.add(source);
+        images.push(source);
+      }
+      return images;
+    }, []);
+  }, [product?.images]);
   const videoUrl = getMediaUrl(product?.video);
+  const galleryMedia = useMemo(() => {
+    const media = galleryImages.map((url) => ({ type: "image", url }));
+    if (videoUrl) media.push({ type: "video", url: videoUrl });
+    return media.length ? media : [{ type: "image", url: galleryFallback }];
+  }, [galleryImages, videoUrl]);
+  const activeGalleryMedia = galleryMedia[selectedGalleryIndex] || galleryMedia[0];
+  const mainGalleryImage = failedGalleryImages.has(activeGalleryMedia.url) ? galleryFallback : activeGalleryMedia.url;
+  const hasMultipleGalleryMedia = galleryMedia.length > 1;
+  const optionDetails = [
+    ["Sizes", options.sizes],
+    ["Colors", options.colors],
+    ["Materials", options.materials],
+    ["Print types", options.printTypes],
+    ["Finishes", options.finishes]
+  ].filter(([, values]) => values.length);
+
+  useEffect(() => {
+    setSelectedGalleryIndex(0);
+    setFailedGalleryImages(new Set());
+    setFailedGalleryVideos(new Set());
+  }, [product?._id]);
   const selectedVariant = product?.variants?.[selectedVariantIndex];
   const finalPrice = Number(product?.basePrice || 0) + Number(selectedVariant?.priceModifier || 0);
   const isSelectedVariantOutOfStock = selectedVariant && Number(selectedVariant.stock || 0) <= 0;
+  const ratingCount = Number(product?.ratingCount || 0);
+  const hasRating = Number.isFinite(ratingCount) && ratingCount > 0;
   const wished = product?._id ? isWishlisted(product._id) : false;
 
   const handleAddToCart = async () => {
@@ -123,6 +182,8 @@ const ProductDetails = () => {
       return;
     }
 
+    if (addToCartLockRef.current) return;
+    addToCartLockRef.current = true;
     setIsAdding(true);
     setError("");
 
@@ -140,9 +201,11 @@ const ProductDetails = () => {
         }
       });
       showToast("Added to Cart.");
+      navigate("/cart");
     } catch (requestError) {
       setError(requestError.response?.data?.message || "Unable to add product to Cart.");
     } finally {
+      addToCartLockRef.current = false;
       setIsAdding(false);
     }
   };
@@ -153,8 +216,16 @@ const ProductDetails = () => {
       return;
     }
 
-    const added = await toggleWishlist(product._id);
-    showToast(added ? "Added to wishlist." : "Removed from wishlist.");
+    setIsWishlistUpdating(true);
+    setWishlistError("");
+    try {
+      const added = await toggleWishlist(product._id);
+      showToast(added ? "Added to wishlist." : "Removed from wishlist.");
+    } catch (requestError) {
+      setWishlistError(requestError.response?.data?.message || "Unable to update wishlist.");
+    } finally {
+      setIsWishlistUpdating(false);
+    }
   };
 
   const submitReview = async (event) => {
@@ -174,7 +245,7 @@ const ProductDetails = () => {
     setIsReviewing(true);
 
     try {
-      await api.post("/reviews", {
+      const submission = await api.post("/reviews", {
         productId: product._id,
         orderId: reviewForm.orderId,
         rating: reviewForm.rating,
@@ -183,7 +254,9 @@ const ProductDetails = () => {
       const response = await api.get(`/products/${product._id}/reviews`);
       setReviews(response.data.reviews);
       setReviewForm((current) => ({ ...current, reviewText: "" }));
-      showToast("Review submitted. Rs. 10 wallet reward added for text reviews.");
+      setMyOrders((current) => current.filter((order) => order._id !== reviewForm.orderId));
+      setReviewForm((current) => ({ ...current, orderId: "" }));
+      showToast(submission.data.rewardGranted ? "Review submitted. Rs. 10 wallet credit added." : "Review submitted.");
     } catch (requestError) {
       setReviewError(requestError.response?.data?.message || "Unable to submit review.");
     } finally {
@@ -191,12 +264,29 @@ const ProductDetails = () => {
     }
   };
 
-  if (error) {
-    return <div className="form-alert">{error}</div>;
+  if (isProductLoading) {
+    return (
+      <section className="product-detail-wrapper product-state" aria-busy="true" aria-label="Loading product">
+        <div className="product-loading-grid" aria-hidden="true">
+          <div className="product-loading-gallery" />
+          <div className="product-loading-copy"><span /><span /><span /><span /></div>
+        </div>
+        <p className="sr-only" role="status">Loading product...</p>
+      </section>
+    );
   }
 
-  if (!product) {
-    return <p>Loading product...</p>;
+  if (isProductNotFound || productLoadError || !product) {
+    return (
+      <section className="product-detail-wrapper product-state">
+        <div className="product-state-card" role={productLoadError ? "alert" : undefined}>
+          <p className="eyebrow">{isProductNotFound ? "Product not found" : "Unable to load"}</p>
+          <h1>{isProductNotFound ? "This product is no longer available" : "We couldn't load this product"}</h1>
+          <p>{productLoadError || (isProductNotFound ? "It may have moved or is no longer listed." : "Please return to the shop and try again.")}</p>
+          <Link className="button-link" to="/shop">Back to Shop</Link>
+        </div>
+      </section>
+    );
   }
 
   return (
@@ -221,55 +311,87 @@ const ProductDetails = () => {
         { label: product.name }
       ]} />
       <div className="product-detail-page">
-        <ProductGallery images={product.images} name={product.name} />
-
-      <div className="product-detail-copy">
-        <p className="eyebrow">{product.category?.name || product.productType}</p>
-        <h1>{product.name}</h1>
-        <p className="lead">{product.shortDescription || product.description}</p>
-        <strong className="detail-price">Rs. {finalPrice.toLocaleString("en-IN")}</strong>
-        <p className="rating-line">
-          {Number(product.ratingAverage || 0).toFixed(1)} rating - {product.ratingCount || 0} reviews
-        </p>
-        {error ? <div className="form-alert">{error}</div> : null}
-
-        <div className="option-block">
-          <h2>Options</h2>
-          <dl>
-            <div>
-              <dt>Sizes</dt>
-              <dd>{options.sizes.join(", ") || "Custom"}</dd>
+        <div className="product-gallery product-gallery--details">
+          {hasMultipleGalleryMedia ? (
+            <div className="product-gallery-thumbs" aria-label="Product media">
+              {galleryMedia.map((media, index) => (
+                <button
+                  key={`${media.type}-${media.url}`}
+                  className={index === selectedGalleryIndex ? "active" : ""}
+                  type="button"
+                  onClick={() => setSelectedGalleryIndex(index)}
+                  aria-label={media.type === "video" ? "View product video 1" : "View image " + (index + 1) + " of " + galleryImages.length + " for " + product.name}
+                  aria-pressed={index === selectedGalleryIndex}
+                >
+                  {media.type === "image" ? (
+                    <img
+                      src={failedGalleryImages.has(media.url) ? galleryFallback : media.url}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      onError={() => setFailedGalleryImages((current) => new Set(current).add(media.url))}
+                    />
+                  ) : <span className="product-video-thumb" aria-hidden="true">▶</span>}
+                </button>
+              ))}
             </div>
-            <div>
-              <dt>Colors</dt>
-              <dd>{options.colors.join(", ") || "Custom"}</dd>
-            </div>
-            <div>
-              <dt>Materials</dt>
-              <dd>{options.materials.join(", ") || "Custom"}</dd>
-            </div>
-            <div>
-              <dt>Print types</dt>
-              <dd>{options.printTypes.join(", ") || "Custom"}</dd>
-            </div>
-            <div>
-              <dt>Finishes</dt>
-              <dd>{options.finishes.join(", ") || "Custom"}</dd>
-            </div>
-          </dl>
+          ) : null}
+          <div className="product-gallery-main">
+            {activeGalleryMedia.type === "video" ? (
+              failedGalleryVideos.has(activeGalleryMedia.url) ? (
+                <div className="product-video-unavailable" role="status">Product video unavailable.</div>
+              ) : (
+                <video controls playsInline preload="metadata" src={activeGalleryMedia.url} onError={() => setFailedGalleryVideos((current) => new Set(current).add(activeGalleryMedia.url))} />
+              )
+            ) : (
+              <img
+                className="zoomable-image"
+                src={mainGalleryImage}
+                alt={product.name || "Cantley product"}
+                loading="eager"
+                decoding="async"
+                onError={() => setFailedGalleryImages((current) => new Set(current).add(activeGalleryMedia.url))}
+              />
+            )}
+            {hasMultipleGalleryMedia ? (
+              <span className="product-gallery-count" aria-hidden="true">
+                {selectedGalleryIndex + 1} / {galleryMedia.length}
+              </span>
+            ) : null}
+          </div>
         </div>
 
-        {videoUrl ? (
-          <div className="option-block">
-            <h2>Product video</h2>
-            <video className="detail-video" controls src={videoUrl} />
-          </div>
-        ) : null}
+      <div className="product-detail-copy">
+        <header className="product-purchase-header">
+          {product.category?.name || product.productType ? <p className="eyebrow">{product.category?.name || product.productType}</p> : null}
+          <h1>{product.name}</h1>
+          {hasRating ? (
+            <p className="rating-line" aria-label={Number(product.ratingAverage || 0).toFixed(1) + " out of 5 from " + ratingCount + " reviews"}>
+              <span aria-hidden="true">Rating</span>
+              <strong>{Number(product.ratingAverage || 0).toFixed(1)}</strong>
+              <span>{ratingCount === 1 ? "1 review" : ratingCount + " reviews"}</span>
+            </p>
+          ) : null}
+          <strong className="detail-price">Rs. {finalPrice.toLocaleString("en-IN")}</strong>
+        </header>
+        {product.shortDescription || product.description ? <p className="lead">{product.shortDescription || product.description}</p> : null}
+        {error ? <div className="form-alert">{error}</div> : null}
 
-        <div className="option-block">
-          <h2>Add to Cart</h2>
+        {optionDetails.length ? <div className="option-block">
+          <h2>Options</h2>
+          <dl>
+            {optionDetails.map(([label, values]) => (
+              <div key={label}>
+                <dt>{label}</dt>
+                <dd>{values.join(", ")}</dd>
+              </div>
+            ))}
+          </dl>
+        </div> : null}
+
+        <div className="option-block purchase-options-block">
           {product.variants?.length ? (
-            <label>
+            <label className="variant-select-field">
               Variant
               <select
                 value={selectedVariantIndex}
@@ -288,11 +410,12 @@ const ProductDetails = () => {
             </label>
           ) : null}
           {selectedVariant ? (
-            <p>
-              Stock: {selectedVariant.stock} - SKU: {selectedVariant.sku || "Not assigned"}
+            <p className={"variant-availability " + (isSelectedVariantOutOfStock ? "is-unavailable" : "is-available")}>
+              <span>{isSelectedVariantOutOfStock ? "Out of stock" : "In stock"}</span>
+              {selectedVariant.sku ? <><span className="metadata-separator" aria-hidden="true">·</span><span>SKU: {selectedVariant.sku}</span></> : null}
             </p>
           ) : null}
-          <label>
+          <label className="quantity-field">
             Quantity
             <input
               disabled={isSelectedVariantOutOfStock}
@@ -304,25 +427,26 @@ const ProductDetails = () => {
             />
           </label>
           <button
-            className="primary-button"
+            className="primary-button purchase-add-button"
             type="button"
             disabled={isAdding || isSelectedVariantOutOfStock}
             onClick={handleAddToCart}
           >
             {isSelectedVariantOutOfStock ? "Out of stock" : isAdding ? "Adding..." : "Add to Cart"}
           </button>
-          <button className={`secondary-button wishlist-inline ${wished ? "active" : ""}`} type="button" onClick={handleWishlist}>
-            {wished ? "Saved to Wishlist" : "Add to Wishlist"}
+          <button className={`secondary-button wishlist-inline ${wished ? "active" : ""}`} type="button" disabled={isWishlistUpdating} onClick={handleWishlist} aria-pressed={wished} aria-label={isWishlistUpdating ? "Updating wishlist" : wished ? "Remove product from wishlist" : "Add product to wishlist"}>
+            {isWishlistUpdating ? "Updating..." : wished ? "Saved to Wishlist" : "Add to Wishlist"}
           </button>
+          {wishlistError ? <div className="form-alert" role="alert">{wishlistError}</div> : null}
           <Link
-            className="button-link"
+            className="button-link purchase-customize-link"
             state={{ product }}
             to={`/design-studio?product=${product._id}&slug=${product.slug}&type=${product.productType === "hoodie" ? "hoodie" : product.productType === "sticker" ? "sticker" : product.productType === "label" ? "label" : "tshirt"}`}
           >
             Customize Design
           </Link>
           <Link
-            className="secondary-button"
+            className="secondary-button purchase-save-design"
             state={{ product }}
             to={`/design-studio?product=${product._id}&slug=${product.slug}&type=${product.productType === "hoodie" ? "hoodie" : product.productType === "sticker" ? "sticker" : product.productType === "label" ? "label" : "tshirt"}`}
           >
@@ -330,27 +454,42 @@ const ProductDetails = () => {
           </Link>
         </div>
 
-        <div className="option-block">
-          <h2>Reviews</h2>
-          <p>
-            {Number(product.ratingAverage || 0).toFixed(1)} average rating - {product.ratingCount || 0} reviews
-          </p>
+        <section className="option-block reviews-section" aria-labelledby="reviews-heading">
+          <h2 id="reviews-heading">Reviews</h2>
+          {hasRating ? (
+            <div className="review-summary" aria-label={Number(product.ratingAverage || 0).toFixed(1) + " out of 5 from " + ratingCount + " reviews"}>
+              <strong>{Number(product.ratingAverage || 0).toFixed(1)}</strong>
+              <span>out of 5</span>
+              <span>{ratingCount === 1 ? "1 review" : ratingCount + " reviews"}</span>
+            </div>
+          ) : null}
           {reviews.length ? (
-            reviews.map((review) => (
-              <div className="review-item" key={review._id}>
-                <strong>{review.user?.name || "Customer"} - {review.rating}/5</strong>
-                <span>Verified Purchase</span>
-                <p>{review.reviewText || "No written review."}</p>
-              </div>
-            ))
+            <div className="review-list">
+              {reviews.map((review) => (
+                <article className="review-item" key={review._id}>
+                  <div className="review-item-header">
+                    <strong>{review.user?.name || "Customer"}</strong>
+                    <span className="review-rating" aria-label={review.rating + " out of 5"}>{review.rating}/5</span>
+                  </div>
+                  {review.createdAt ? (
+                    <time dateTime={review.createdAt}>
+                      {new Date(review.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                    </time>
+                  ) : null}
+                  <p>{review.reviewText || "No written review."}</p>
+                </article>
+              ))}
+            </div>
           ) : (
-            <p>No reviews yet.</p>
+            <p className="review-empty">No reviews yet.</p>
           )}
-        </div>
+        </section>
 
-        <form className="option-block" onSubmit={submitReview}>
+        <form className="option-block review-form" onSubmit={submitReview}>
           <h2>Write a review</h2>
-          {reviewError ? <div className="form-alert">{reviewError}</div> : null}
+          <p>Earn Rs. 10 wallet credit for one eligible written review per product per delivered and fully paid order.</p>
+          {reviewError ? <div className="form-alert" role="alert">{reviewError}</div> : null}
+          {!myOrders.length ? <p>Reviews become available after your order is delivered and fully paid.</p> : null}
           <label>
             Purchased order
             <select
@@ -386,7 +525,7 @@ const ProductDetails = () => {
               onChange={(event) => setReviewForm((current) => ({ ...current, reviewText: event.target.value }))}
             />
           </label>
-          <button className="primary-button" disabled={isReviewing} type="submit">
+          <button className="primary-button review-submit" disabled={isReviewing || !myOrders.length} type="submit">
             {isReviewing ? "Submitting..." : "Submit review"}
           </button>
         </form>
@@ -394,7 +533,7 @@ const ProductDetails = () => {
       </div>
       {relatedProducts.length ? (
         <div className="catalog-page related-products">
-          <div className="page-heading"><p className="eyebrow">Related</p><h1>More from this collection</h1></div>
+          <div className="page-heading"><p className="eyebrow">Related</p><h2>More from this collection</h2></div>
           <div className="product-grid">{relatedProducts.map((item) => <ProductCard key={item._id} product={item} />)}</div>
         </div>
       ) : null}
